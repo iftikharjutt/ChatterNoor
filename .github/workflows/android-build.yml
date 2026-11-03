@@ -29,9 +29,32 @@ jobs:
       - name: Install Android build tools
         run: sdkmanager "platforms;android-34" "build-tools;34.0.0"
 
+      - name: Validate app JavaScript
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          html = Path("android/assets/index.html").read_text()
+          scripts = re.findall(r"<script>(.*?)</script>", html, re.S)
+          if len(scripts) != 1:
+              raise SystemExit(f"Expected one inline app script, found {len(scripts)}")
+          Path("/tmp/chatternoor-app.js").write_text(scripts[0])
+          PY
+          node --check /tmp/chatternoor-app.js
+
+      - name: Prepare Android build environment
+        run: |
+          mkdir -p "$HOME/.android"
+          if [ ! -f "$HOME/.android/debug.keystore" ]; then
+            keytool -genkeypair -v -keystore "$HOME/.android/debug.keystore" \
+              -storepass android -alias androiddebugkey -keypass android \
+              -dname "CN=Android Debug,O=Android,C=US" -keyalg RSA -keysize 2048 -validity 10000
+          fi
+
       - name: Build signed debug APK
         working-directory: android
         run: |
+          export ANDROID_SDK="$ANDROID_HOME"
           export PATH="$ANDROID_HOME/build-tools/34.0.0:$PATH"
           chmod +x build_apk.sh
           ./build_apk.sh
