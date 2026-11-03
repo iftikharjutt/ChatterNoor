@@ -354,7 +354,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
       <canvas id="face"></canvas>
 
       <!-- MINI HTML VIEWER / GAME BROWSER FRAME -->
-      <iframe id="gameFrame" class="game-frame" sandbox="allow-scripts allow-modals allow-same-origin"></iframe>
+      <iframe id="gameFrame" class="game-frame" sandbox="allow-scripts allow-modals"></iframe>
 
       <div class="scan"></div><div class="vig"></div>
       <div class="notch"><i></i>NOOR DISPLAY · FULLSCREEN DUAL ENGINE</div>
@@ -412,7 +412,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
     </button>
   </div>
   <div class="fs-body">
-    <iframe id="fsGameFrame" sandbox="allow-scripts allow-modals allow-same-origin"></iframe>
+    <iframe id="fsGameFrame" sandbox="allow-scripts allow-modals"></iframe>
   </div>
 </div>
 
@@ -454,6 +454,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
         <button type="button" class="keyeye" id="keyEye">SHOW</button>
       </div>
       <div id="keyDetectedBadge" style="font:600 10.5px var(--mono);color:#57f2a4;margin-top:6px;display:none;"></div>
+      <p style="font:500 10px/1.5 var(--mono);color:#8296ab;margin-top:7px;">API key is kept only for this browser session, not in saved app settings. Avoid using a shared device.</p>
     </div>
 
     <div class="field">
@@ -538,17 +539,39 @@ const DEFAULT_SETTINGS = {
   ttsPitch: 1.08
 };
 
-let settings = { ...DEFAULT_SETTINGS };
+let runtimeApiKey = '';
+let savedSettings = {};
 try {
   const saved = localStorage.getItem('NOOR_SETTINGS_V100');
-  if (saved) settings = { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
+  if (saved) savedSettings = JSON.parse(saved);
 } catch(e) {}
+try {
+  runtimeApiKey = sessionStorage.getItem('NOOR_GEMINI_API_KEY') || '';
+} catch(e) {}
+// Migrate keys saved by older versions out of persistent localStorage.
+if (!runtimeApiKey && savedSettings.apiKey) runtimeApiKey = savedSettings.apiKey;
+delete savedSettings.apiKey;
+let settings = { ...DEFAULT_SETTINGS, ...savedSettings, apiKey: '' };
+try {
+  localStorage.setItem('NOOR_SETTINGS_V100', JSON.stringify(settings));
+  if (runtimeApiKey) sessionStorage.setItem('NOOR_GEMINI_API_KEY', runtimeApiKey);
+} catch(e) {}
+
+function getApiKey() {
+  return apiKeyInput.value.trim() || runtimeApiKey;
+}
 
 function saveSettings() {
   try {
-    localStorage.setItem('NOOR_SETTINGS_V100', JSON.stringify(settings));
-    showToast('Fullscreen Game Settings saved!', 'ok');
-  } catch(e) {}
+    const persisted = { ...settings };
+    delete persisted.apiKey;
+    localStorage.setItem('NOOR_SETTINGS_V100', JSON.stringify(persisted));
+    if (runtimeApiKey) sessionStorage.setItem('NOOR_GEMINI_API_KEY', runtimeApiKey);
+    else sessionStorage.removeItem('NOOR_GEMINI_API_KEY');
+    showToast('Settings saved. API key is kept for this session only.', 'ok');
+  } catch(e) {
+    showToast('Settings could not be saved in this browser.', 'bad');
+  }
 }
 
 const canvas = document.getElementById('face');
@@ -1100,7 +1123,7 @@ function extractHtmlCode(text) {
 // GOOGLE GEMINI NATIVE REST CALLER
 async function callGeminiNativeAPI(apiKey, model, systemPrompt, userText) {
   const modelName = model || 'gemini-2.5-flash';
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent`;
 
   let historyContext = "";
   messageHistory.slice(-6).forEach(m => {
@@ -1111,7 +1134,7 @@ async function callGeminiNativeAPI(apiKey, model, systemPrompt, userText) {
 
   const response = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
     body: JSON.stringify({
       contents: [{ parts: [{ text: promptPayload }] }]
     })
@@ -1281,7 +1304,7 @@ modelSelect.addEventListener('change', () => {
 
 // DISCOVER LIVE MODELS FROM GOOGLE GEMINI ACCOUNT
 discoverModelsBtn.addEventListener('click', async () => {
-  const key = apiKeyInput.value.trim() || settings.apiKey;
+  const key = getApiKey();
   if (!key) {
     showToast('⚠️ Pehle Google Gemini API Key enter karein!', 'bad');
     return;
@@ -1292,7 +1315,9 @@ discoverModelsBtn.addEventListener('click', async () => {
   showToast('Connecting to Google Gemini API to discover eligible models...', 'ok');
 
   try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models', {
+      headers: { 'x-goog-api-key': key }
+    });
     if (!res.ok) {
       const errT = await res.text();
       let msg = errT;
@@ -1358,7 +1383,7 @@ async function sendMessage() {
   
   isThinking = true; sendBtn.disabled = true; showTypingDots();
 
-  const key = apiKeyInput.value.trim() || settings.apiKey;
+  const key = getApiKey();
   const model = getSelectedModel() || settings.model || 'gemini-2.5-flash';
   const sysPrompt = sysPromptInput.value.trim() || settings.systemPrompt;
 
@@ -1429,7 +1454,7 @@ sendBtn.addEventListener('click', sendMessage);
 function openDrawer() {
   displayModeSelect.value = settings.displayMode || 'auto';
   providerSelect.value = settings.provider || 'gemini';
-  apiKeyInput.value = settings.apiKey || '';
+  apiKeyInput.value = runtimeApiKey || '';
   setSelectedModel(settings.model || 'gemini-2.5-flash');
   sysPromptInput.value = settings.systemPrompt;
 
@@ -1463,7 +1488,7 @@ displayModeSelect.addEventListener('change', (e) => {
 saveBtn.addEventListener('click', () => {
   settings.displayMode = displayModeSelect.value;
   settings.provider = providerSelect.value;
-  settings.apiKey = apiKeyInput.value.trim();
+  runtimeApiKey = apiKeyInput.value.trim();
   settings.model = getSelectedModel();
   settings.systemPrompt = sysPromptInput.value.trim();
   settings.ttsVoice = voiceSelect.value;
@@ -1478,7 +1503,7 @@ saveBtn.addEventListener('click', () => {
 });
 
 testBtn.addEventListener('click', async () => {
-  const key = apiKeyInput.value.trim() || settings.apiKey;
+  const key = getApiKey();
   const model = getSelectedModel();
 
   if (!key) {
@@ -1490,10 +1515,10 @@ testBtn.addEventListener('click', async () => {
   showToast(`Testing model: ${model}...`, 'ok');
   
   try {
-    const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+    const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
     const res = await fetch(testUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
       body: JSON.stringify({ contents: [{ parts: [{ text: "Hi" }] }] })
     });
     
