@@ -480,7 +480,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
       <label>Custom System Prompt</label>
       <textarea id="sysPrompt" rows="4">You are NOOR, an emotionally intelligent AI companion with glowing expressive eyes AND an expert HTML5 Game Creator!
 1. When the user asks for a game or app (e.g. 'Tic-Tac-Toe', 'Snake Game', 'Calculator', 'Memory Game'), generate complete self-contained executable HTML/CSS/JS code inside ```html ... ``` code blocks so it renders directly in NOOR's Fullscreen Game Screen!
-2. For regular chat, include an emotion tag at the start: [MOOD:crying], [MOOD:tirchi], [MOOD:sparkling], [MOOD:sharmati], [MOOD:love], [MOOD:happy], [MOOD:angry], or [MOOD:wink]. Speak naturally in Roman Urdu.</textarea>
+2. For regular chat, include an emotion tag at the start: [MOOD:crying], [MOOD:tirchi], [MOOD:sparkling], [MOOD:sharmati], [MOOD:love], [MOOD:happy], [MOOD:angry], or [MOOD:wink]. Speak naturally in Roman Urdu.\\n3. Make every generated game mobile-first and responsive: viewport meta, large touch-friendly controls, pointer/touch support, portrait and landscape layouts where practical, and no keyboard-only gameplay.</textarea>
     </div>
 
     <div style="display:flex;gap:10px;margin-top:2px;">
@@ -488,7 +488,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
     </div>
 
     <div class="sec">📱 MOBILE VOICE ENGINE</div>
-
+    <div class="field"><label>Microphone language</label>
+      <select id="inputLanguageSelect"><option value="ur-PK">Urdu (Pakistan)</option><option value="en-AU">English (Australia)</option><option value="en-US">English (United States)</option></select>
+    </div>
+    <div class="field"><label>Preferred spoken reply language</label>
+      <select id="voiceLanguageSelect"><option value="ur">Urdu voice</option><option value="en-AU">English (Australia) voice</option><option value="en-US">English (US) voice</option></select>
+    </div>
     <div class="field">
       <label>Mobile Voice</label>
       <select id="voiceSelect"><option value="">Default System Mobile Voice</option></select>
@@ -513,6 +518,15 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
     <div style="display:flex;gap:10px;margin-top:2px;">
       <button type="button" class="btn-g" id="testVoiceBtn" style="flex:1;">🔊 TEST MOBILE VOICE</button>
     </div>
+    <div class="sec">🧠 ON-DEVICE CHAT MEMORY & PRIVACY</div>
+    <div class="field">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+        <input type="checkbox" id="rememberChatsToggle" style="width:18px;height:18px;accent-color:#57f2a4;">
+        Remember chats on this device
+      </label>
+      <p style="font:500 10px/1.6 var(--mono);color:#8296ab;margin-top:8px;">Off by default. When enabled, the latest 40 chat messages are saved in this device's browser storage and may be included in later AI prompts. Use Clear Chat to erase them. Your Gemini API key is not saved with chat history.</p>
+    </div>
+    <div class="field"><p style="font:500 10px/1.6 var(--mono);color:#8296ab;">Voice recognition may be processed by your device or its speech provider. Chat text is sent to Google Gemini when you send a message. Noor currently has no advertising SDK or analytics tracker enabled.</p></div>
   </div>
   <div class="drawer-foot">
     <button type="button" class="btn-p" id="saveBtn">SAVE & APPLY SETTINGS</button>
@@ -536,7 +550,10 @@ const DEFAULT_SETTINGS = {
   ttsEnabled: true,
   ttsVoice: '',
   ttsRate: 1.0,
-  ttsPitch: 1.08
+  ttsPitch: 1.08,
+  inputLanguage: 'ur-PK',
+  voiceLanguage: 'ur',
+  rememberChats: false
 };
 
 let runtimeApiKey = '';
@@ -613,6 +630,9 @@ const customModelInput = document.getElementById('customModelInput');
 const discoverModelsBtn = document.getElementById('discoverModelsBtn');
 const sysPromptInput = document.getElementById('sysPrompt');
 const voiceSelect = document.getElementById('voiceSelect');
+const inputLanguageSelect = document.getElementById('inputLanguageSelect');
+const voiceLanguageSelect = document.getElementById('voiceLanguageSelect');
+const rememberChatsToggle = document.getElementById('rememberChatsToggle');
 const rateRange = document.getElementById('rateRange');
 const rateVal = document.getElementById('rateVal');
 const pitchRange = document.getElementById('pitchRange');
@@ -645,8 +665,16 @@ function switchScreenMode(targetMode) {
   }
 }
 
+function prepareGameHtml(html) {
+  let output = String(html || '');
+  const viewport = '<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">';
+  const mobileStyle = '<style id="noor-mobile-game-defaults">html,body{max-width:100%;min-height:100%;margin:0;-webkit-text-size-adjust:100%;}*,*::before,*::after{box-sizing:border-box;}img,canvas,video,svg{max-width:100%;}button,input,select,textarea{font:inherit;}button{min-height:40px;touch-action:manipulation;}body{overscroll-behavior:none;}</style>';
+  if (!/<meta[^>]+name=["']viewport["']/i.test(output)) output = output.replace(/<head([^>]*)>/i, '<head$1>' + viewport);
+  if (!/id=["']noor-mobile-game-defaults["']/i.test(output)) output = output.replace(/<\/head>/i, mobileStyle + '</head>');
+  return output;
+}
 function openFullscreenGame(htmlCode) {
-  if (htmlCode) currentHtmlCode = htmlCode;
+  if (htmlCode) currentHtmlCode = prepareGameHtml(htmlCode);
   if (!currentHtmlCode) {
     showToast('⚠️ No HTML game loaded yet. Ask Gemini to make a game!', 'bad');
     return;
@@ -755,6 +783,15 @@ let isSpeaking = false;
 let isThinking = false;
 let messageHistory = [];
 let msgCounter = 0;
+const CHAT_STORAGE_KEY = 'NOOR_LOCAL_CHAT_V1';
+const MAX_SAVED_MESSAGES = 40;
+function persistConversation() {
+  try {
+    if (!settings.rememberChats) { localStorage.removeItem(CHAT_STORAGE_KEY); return; }
+    const safeHistory = messageHistory.slice(-MAX_SAVED_MESSAGES).filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string');
+    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(safeHistory));
+  } catch (e) { showToast('Device chat storage is full or unavailable.', 'bad'); }
+}
 
 let gazeX = 0; let gazeY = 0;
 let targetGazeX = 0; let targetGazeY = 0;
@@ -1014,8 +1051,9 @@ let voices = [];
 function initVoices() {
   if ('speechSynthesis' in window) {
     voices = speechSynthesis.getVoices();
-    voiceSelect.innerHTML = '<option value="">Default Mobile Voice</option>';
-    voices.sort((a, b) => (a.name.includes('Urdu') || a.name.includes('Natural')) ? -1 : 1);
+    voiceSelect.innerHTML = '<option value="">Auto / device default</option>';
+    const preferred = settings.voiceLanguage || 'ur';
+    voices.sort((a, b) => Number(b.lang.toLowerCase().startsWith(preferred.toLowerCase())) - Number(a.lang.toLowerCase().startsWith(preferred.toLowerCase())));
     voices.forEach((v) => {
       const opt = document.createElement('option'); opt.value = v.name;
       opt.textContent = `${v.name} (${v.lang})`;
@@ -1049,10 +1087,8 @@ function speakText(text) {
   uttr.pitch = parseFloat(settings.ttsPitch) || 1.08;
   uttr.volume = 1.0;
 
-  if (settings.ttsVoice) {
-    const selectedVoice = voices.find(v => v.name === settings.ttsVoice);
-    if (selectedVoice) uttr.voice = selectedVoice;
-  }
+  const selectedVoice = settings.ttsVoice ? voices.find(v => v.name === settings.ttsVoice) : voices.find(v => v.lang.toLowerCase().startsWith((settings.voiceLanguage || 'ur').toLowerCase()));
+  if (selectedVoice) uttr.voice = selectedVoice;
 
   uttr.onstart = () => { isSpeaking = true; };
   uttr.onend = () => { isSpeaking = false; };
@@ -1065,7 +1101,7 @@ function speakText(text) {
 let recognition = null; let isListening = false;
 if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
   const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-  recognition = new SpeechRec(); recognition.continuous = false; recognition.interimResults = true; recognition.lang = 'ur-PK';
+  recognition = new SpeechRec(); recognition.continuous = false; recognition.interimResults = true; recognition.lang = settings.inputLanguage || 'ur-PK';
   recognition.onresult = (e) => {
     inputEl.value = Array.from(e.results).map(r => r[0].transcript).join('');
     autoResizeTextarea();
@@ -1249,9 +1285,21 @@ function showTypingDots() {
 }
 function removeTypingDots() { const elem = document.getElementById('typingIndicator'); if (elem) elem.remove(); }
 
+function restoreSavedConversation() {
+  if (!settings.rememberChats) return;
+  try {
+    const saved = JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY) || '[]');
+    if (!Array.isArray(saved)) return;
+    messageHistory = saved.slice(-MAX_SAVED_MESSAGES).filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string');
+    messageHistory.forEach(m => addMessage(m.role === 'assistant' ? 'ai' : 'user', m.content, false, true));
+  } catch (e) { messageHistory = []; localStorage.removeItem(CHAT_STORAGE_KEY); }
+}
+restoreSavedConversation();
 function clearChat() {
   chatEl.innerHTML = '<div class="divider">--- CHAT CLEARED ---</div>';
-  messageHistory = []; msgCounter = 0; msgCountEl.textContent = '0 MSGS'; setMood('idle'); playChime('mood');
+  messageHistory = []; msgCounter = 0; msgCountEl.textContent = '0 MSGS';
+  try { localStorage.removeItem(CHAT_STORAGE_KEY); } catch(e) {}
+  setMood('idle'); playChime('mood');
 }
 clearBtn.addEventListener('click', clearChat);
 
@@ -1371,7 +1419,7 @@ async function sendMessage() {
   lastUserInteraction = Date.now(); inputEl.value = ''; autoResizeTextarea();
   if (!isAudioUnlocked) unlockAudioSystem();
   
-  playChime('send'); addMessage('user', text); messageHistory.push({ role: 'user', content: text });
+  playChime('send'); addMessage('user', text); messageHistory.push({ role: 'user', content: text }); persistConversation();
 
   const userMoodData = parseMoodFromResponse(text);
   if (settings.displayMode === 'auto' || settings.displayMode === 'eyes') {
@@ -1402,8 +1450,8 @@ async function sendMessage() {
     // 1. CHECK IF GEMINI GENERATED A GAME OR HTML APP CODE
     const htmlCode = extractHtmlCode(rawReply);
     if (htmlCode) {
-      currentHtmlCode = htmlCode;
-      gameFrame.srcdoc = htmlCode;
+      currentHtmlCode = prepareGameHtml(htmlCode);
+      gameFrame.srcdoc = currentHtmlCode;
       switchScreenMode('game');
 
       // AUTOMATICALLY LAUNCH IN FULLSCREEN MODE
@@ -1433,7 +1481,7 @@ async function sendMessage() {
     
     // 3. DISPLAY GAME-STYLE FLOATING DIALOGUE (APPEAR & DISAPPEAR)
     addMessage('ai', parsed.cleanText);
-    messageHistory.push({ role: 'assistant', content: parsed.cleanText });
+    messageHistory.push({ role: 'assistant', content: parsed.cleanText }); persistConversation();
 
     // 4. SPEAK RESPONSE
     speakText(parsed.cleanText);
@@ -1455,6 +1503,9 @@ function openDrawer() {
   displayModeSelect.value = settings.displayMode || 'auto';
   providerSelect.value = settings.provider || 'gemini';
   apiKeyInput.value = runtimeApiKey || '';
+  inputLanguageSelect.value = settings.inputLanguage || 'ur-PK';
+  voiceLanguageSelect.value = settings.voiceLanguage || 'ur';
+  rememberChatsToggle.checked = !!settings.rememberChats;
   setSelectedModel(settings.model || 'gemini-2.5-flash');
   sysPromptInput.value = settings.systemPrompt;
 
@@ -1492,13 +1543,17 @@ saveBtn.addEventListener('click', () => {
   settings.model = getSelectedModel();
   settings.systemPrompt = sysPromptInput.value.trim();
   settings.ttsVoice = voiceSelect.value;
+  settings.inputLanguage = inputLanguageSelect.value;
+  settings.voiceLanguage = voiceLanguageSelect.value;
+  settings.rememberChats = rememberChatsToggle.checked;
+  if (recognition) recognition.lang = settings.inputLanguage;
   settings.ttsRate = parseFloat(rateRange.value);
   settings.ttsPitch = parseFloat(pitchRange.value);
 
   if (settings.displayMode === 'eyes') switchScreenMode('eyes');
   else if (settings.displayMode === 'game') switchScreenMode('game');
 
-  saveSettings(); closeDrawerFn(); playChime('boot');
+  saveSettings(); persistConversation(); initVoices(); closeDrawerFn(); playChime('boot');
   showToast(`✅ Settings Saved! Model: ${settings.model}`, 'ok');
 });
 
