@@ -97,3 +97,10 @@ This repository is **public** and open for forks, edits, pull requests, and enha
 - Cleartext HTTP traffic is disabled; external page navigation is blocked in the native WebView.
 
 **Important:** A client-side API key is still accessible to the running app and its JavaScript. Use a restricted key, monitor usage, and do not embed a production secret in a public APK. A backend proxy is the stronger production architecture.
+
+
+## Phase 2
+- Optional on-device conversation memory (off by default; latest 40 text messages).
+- Urdu and English (Australia/US) speech input and preferred reply voice.
+- Mobile-first game-generation guidance and responsive iframe defaults.
+- See [PRIVACY.md](PRIVACY.md) and [MONETIZATION.md](MONETIZATION.md) before release.
