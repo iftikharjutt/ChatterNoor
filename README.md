@@ -86,3 +86,14 @@ ChatterNoor/
 ## 🤝 Open for Edits & Contributions
 
 This repository is **public** and open for forks, edits, pull requests, and enhancements!
+
+
+## 🔐 Security notes (v1.1)
+
+- Gemini API keys are excluded from persistent app settings and retained only in the current browser session. Older saved keys are migrated out of localStorage.
+- Gemini requests send the key in the `x-goog-api-key` header instead of the request URL.
+- Generated HTML games run in sandboxed iframes without same-origin access.
+- The Android WebView grants microphone access only after the Android runtime permission is approved, and only for audio capture from the local app page.
+- Cleartext HTTP traffic is disabled; external page navigation is blocked in the native WebView.
+
+**Important:** A client-side API key is still accessible to the running app and its JavaScript. Use a restricted key, monitor usage, and do not embed a production secret in a public APK. A backend proxy is the stronger production architecture.
