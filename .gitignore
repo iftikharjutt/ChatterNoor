@@ -1,0 +1,14 @@
+# Android build generated files
+android/bin/
+android/gen/
+*.class
+*.dex
+unaligned.apk
+aligned.apk
+*.log
+
+# Editor / System files
+.DS_Store
+Thumbs.db
+*.swp
+*.bak

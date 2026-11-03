@@ -1,0 +1,1530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<title>NOOR — Fullscreen Game & Eyes Companion v10.0</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#06080c; --panel:#0c1117; --panel2:#101823; --line:#1c2734; --line2:#2a3a4e;
+  --txt:#e2ecf5; --dim:#8296ab; --faint:#54677c;
+  --cyan:#59e0ff; --amber:#ffb454; --red:#ff5d6c; --green:#57f2a4; --pink:#ff7d9c;
+  --disp:'Unbounded',sans-serif; --body:'Space Grotesk',sans-serif; --mono:'JetBrains Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--txt);font-family:var(--body);display:flex;flex-direction:column;overflow:hidden}
+::selection{background:rgba(89,224,255,.3)}
+button{font-family:inherit;cursor:pointer}
+
+.ambient{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(900px 520px at 6% -6%,rgba(89,224,255,.07),transparent 60%),
+             radial-gradient(820px 540px at 102% 106%,rgba(255,180,84,.06),transparent 60%);}
+.ambient::before{content:'';position:absolute;inset:0;
+  background-image:radial-gradient(rgba(255,255,255,.05) 1px,transparent 1.4px);background-size:26px 26px;}
+.ambient::after{content:'';position:absolute;inset:-60%;
+  background:conic-gradient(from 0deg,transparent 0 78%,rgba(89,224,255,.045) 82%,transparent 86%);
+  animation:sweep 16s linear infinite;}
+@keyframes sweep{to{transform:rotate(360deg)}}
+
+header{position:relative;z-index:2;display:flex;align-items:center;gap:14px;padding:13px 22px;border-bottom:1px solid var(--line);flex:none}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-mark{width:40px;height:40px;border-radius:12px;background:linear-gradient(145deg,#0e1620,#0a0f16);
+  border:1px solid var(--line2);display:grid;place-items:center;box-shadow:inset 0 0 18px rgba(89,224,255,.12)}
+.logo-mark svg{filter:drop-shadow(0 0 6px rgba(89,224,255,.8))}
+.logo-eye{animation:lblink 4.6s infinite;transform-origin:center}
+@keyframes lblink{0%,90%,100%{transform:scaleY(1)}94%{transform:scaleY(.08)}}
+.logo h1{font:900 19px var(--disp);letter-spacing:.24em}
+.logo h1 span{color:var(--cyan);text-shadow:0 0 16px rgba(89,224,255,.6)}
+.tagline{font:600 9px var(--mono);letter-spacing:.32em;color:var(--faint);margin-top:3px}
+header .spacer{flex:1}
+.chip{display:flex;align-items:center;gap:8px;font:600 10px var(--mono);letter-spacing:.16em;color:var(--dim);
+  border:1px solid var(--line);padding:8px 13px;border-radius:99px;background:rgba(13,19,27,.75)}
+.led{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green);animation:led 2.4s infinite}
+@keyframes led{50%{opacity:.45}}
+.ibtn{width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--dim);
+  display:grid;place-items:center;transition:.25s}
+.ibtn:hover{color:var(--cyan);border-color:var(--line2);box-shadow:0 0 16px rgba(89,224,255,.18);transform:translateY(-1px)}
+.ibtn.on{color:#04222c;background:var(--cyan);border-color:var(--cyan);box-shadow:0 0 18px rgba(89,224,255,.4)}
+.ibtn .mute{display:none}
+.ibtn:not(.on) .mute{display:block}
+.ibtn:disabled{opacity:.35;pointer-events:none}
+
+main{position:relative;z-index:1;flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);gap:18px;padding:18px 22px}
+
+.face-wrap{display:flex;flex-direction:column;gap:10px;min-height:0}
+.face-screen{position:relative;flex:1;min-height:280px;border-radius:26px;overflow:hidden;
+  background:radial-gradient(120% 90% at 50% 30%,#0a0f14 0%,#05070a 45%,#000 100%);
+  border:1px solid #1a2531;box-shadow:0 30px 80px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.02),inset 0 0 120px rgba(0,0,0,.9);}
+.face-screen canvas{position:absolute;inset:0;width:100%;height:100%;transition:opacity .3s}
+.game-frame{position:absolute;inset:0;width:100%;height:100%;border:none;background:#06090e;display:none;z-index:4}
+.scan{position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(255,255,255,.022) 0 1px,transparent 1px 3px);mix-blend-mode:overlay;z-index:3}
+.vig{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 140px rgba(0,0,0,.85);z-index:3}
+.notch{position:absolute;top:14px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;
+  font:600 9px var(--mono);letter-spacing:.34em;color:#3d4f63;pointer-events:none;z-index:6}
+.notch i{width:5px;height:5px;border-radius:50%;background:var(--red);animation:rec 1.6s infinite}
+@keyframes rec{50%{opacity:.25}}
+
+/* Top Control Buttons */
+.top-controls{position:absolute;right:18px;top:12px;z-index:7;display:flex;gap:8px;}
+.screen-mode-pill{background:rgba(12,17,23,.88);border:1px solid var(--line2);color:var(--cyan);
+  font:700 9.5px var(--mono);letter-spacing:.14em;padding:6px 12px;border-radius:99px;cursor:pointer;
+  transition:.25s;backdrop-filter:blur(4px);display:flex;align-items:center;gap:6px;}
+.screen-mode-pill:hover{background:var(--cyan);color:#04222c;box-shadow:0 0 14px rgba(89,224,255,.4)}
+
+.fullscreen-pill{background:linear-gradient(145deg,var(--green),#2ed573);color:#04222c;border:none;
+  font:700 9.5px var(--mono);letter-spacing:.14em;padding:6px 12px;border-radius:99px;cursor:pointer;
+  transition:.25s;display:none;box-shadow:0 0 14px rgba(87,242,164,.4)}
+.fullscreen-pill:hover{transform:scale(1.04)}
+
+.mood-tag{position:absolute;left:18px;bottom:16px;font:700 11px var(--mono);letter-spacing:.3em;color:var(--cyan);
+  text-shadow:0 0 12px currentColor;transition:color .4s;pointer-events:none;z-index:6}
+.wave{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:3px;align-items:flex-end;height:26px;pointer-events:none;z-index:6}
+.wave i{width:3px;height:100%;border-radius:2px;background:linear-gradient(180deg,var(--cyan),rgba(89,224,255,.2));
+  transform-origin:bottom;transform:scaleY(.06);opacity:.85}
+.boot{position:absolute;inset:0;z-index:8;display:grid;place-items:center;background:#000;transition:opacity .6s}
+.boot pre{font:600 11px/2 var(--mono);letter-spacing:.18em;color:var(--cyan);text-shadow:0 0 10px rgba(89,224,255,.5)}
+
+.voice-banner{position:absolute;top:48px;left:50%;transform:translateX(-50%);z-index:9;
+  background:linear-gradient(145deg,var(--amber),#e67e22);color:#000;font:700 10px var(--mono);
+  letter-spacing:.14em;padding:9px 16px;border-radius:99px;cursor:pointer;box-shadow:0 0 20px rgba(255,180,84,.6);
+  display:flex;align-items:center;gap:8px;animation:bannerPulse 1.8s infinite;}
+@keyframes bannerPulse{50%{transform:translateX(-50%) scale(1.04)}}
+
+.face-foot{display:flex;justify-content:space-between;gap:14px;font:500 10.5px var(--mono);letter-spacing:.06em;color:var(--faint);padding:0 4px;flex:none}
+#ticker{color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* FULLSCREEN GAME MODAL OVERLAY */
+.fullscreen-game-overlay{position:fixed;inset:0;z-index:100;background:#06080c;display:none;flex-direction:column}
+.fullscreen-game-overlay.active{display:flex}
+.fs-head{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;
+  background:linear-gradient(180deg,#0d131b,#070a0e);border-bottom:1px solid var(--line);flex:none}
+.fs-head h3{font:700 12px var(--disp);letter-spacing:.18em;color:var(--green);display:flex;align-items:center;gap:8px}
+.exit-fs-btn{background:linear-gradient(145deg,var(--red),#ff3838);color:#fff;font:700 11px var(--mono);
+  letter-spacing:.16em;border:none;border-radius:99px;padding:8px 18px;cursor:pointer;transition:.25s;
+  box-shadow:0 0 16px rgba(255,93,108,.4);display:flex;align-items:center;gap:6px;}
+.exit-fs-btn:hover{transform:scale(1.05);box-shadow:0 0 24px rgba(255,93,108,.6)}
+.fs-body{flex:1;position:relative;background:#000;overflow:hidden}
+.fs-body iframe{position:absolute;inset:0;width:100%;height:100%;border:none;background:#000}
+
+.chat-panel{display:flex;flex-direction:column;min-height:0;border:1px solid var(--line);border-radius:22px;
+  background:linear-gradient(180deg,rgba(16,23,32,.94),rgba(10,15,21,.94))}
+.chat-head{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-bottom:1px solid var(--line);flex:none}
+.chat-head b{font:600 10px var(--mono);letter-spacing:.3em;color:var(--dim)}
+.chat-head .tools{display:flex;align-items:center;gap:10px}
+#msgCount{font:600 9px var(--mono);letter-spacing:.14em;color:var(--faint)}
+.mini{background:none;border:1px solid transparent;color:var(--faint);display:grid;place-items:center;
+  width:30px;height:30px;border-radius:99px;transition:.2s}
+.mini:hover{color:var(--red);border-color:var(--line);background:rgba(255,93,108,.07)}
+.chat{flex:1;min-height:0;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:14px;scroll-behavior:smooth;background:radial-gradient(100% 100% at 50% 10%, rgba(13,20,30,0.3) 0%, rgba(6,8,12,0.85) 100%)}
+.chat::-webkit-scrollbar{width:8px}
+.chat::-webkit-scrollbar-thumb{background:#1c2836;border-radius:4px}
+.divider{align-self:center;font:600 9px var(--mono);letter-spacing:.3em;color:var(--faint);padding:2px 0}
+.msg{display:flex;gap:10px;max-width:88%;animation:pop .35s cubic-bezier(.2,.9,.3,1.2) both}
+@keyframes pop{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
+
+/* NOOR GAME-STYLE FLOATING DIALOGUE LINES (TRANSPARENT BACKGROUND & APPEAR/DISAPPEAR) */
+.msg.ai{
+  align-self:stretch;
+  max-width:100%;
+  background:transparent !important;
+  border:none !important;
+  box-shadow:none !important;
+  padding:0;
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  animation:gameLineAppear 0.5s cubic-bezier(.16,1,.3,1) forwards;
+  transition:opacity 0.9s ease, transform 0.9s ease, max-height 0.7s ease, margin 0.7s ease;
+}
+@keyframes gameLineAppear{
+  0%{opacity:0;transform:translateY(15px) scale(0.98);filter:blur(3px)}
+  100%{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}
+}
+.msg.ai.fading-out{
+  opacity:0 !important;
+  transform:translateY(-10px) scale(0.98) !important;
+  filter:blur(3px) !important;
+  pointer-events:none;
+}
+.msg.ai.collapsed{
+  max-height:0 !important;
+  margin:0 !important;
+  padding:0 !important;
+  overflow:hidden !important;
+  opacity:0 !important;
+  pointer-events:none !important;
+}
+
+.game-speaker-hud{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font:700 11px var(--mono);
+  letter-spacing:.22em;
+  color:var(--cyan);
+  text-shadow:0 0 10px rgba(89,224,255,.8),0 0 20px rgba(89,224,255,.3);
+  user-select:none;
+}
+.speaker-pip{
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:var(--cyan);
+  box-shadow:0 0 10px var(--cyan);
+  animation:hudPulse 1.8s infinite;
+}
+@keyframes hudPulse{
+  0%,100%{transform:scale(1);opacity:.75}
+  50%{transform:scale(1.4);opacity:1;box-shadow:0 0 16px var(--cyan)}
+}
+
+.msg.ai .bubble{
+  background:transparent !important;
+  border:none !important;
+  box-shadow:none !important;
+  padding:4px 2px !important;
+  border-radius:0 !important;
+  font-size:16px;
+  font-weight:500;
+  line-height:1.65;
+  color:#f0f7ff;
+  text-shadow:0 0 12px rgba(89,224,255,.5),0 2px 4px rgba(0,0,0,.9);
+  white-space:pre-wrap;
+  word-break:break-word;
+}
+.msg.ai .meta{
+  font:500 9px var(--mono);
+  letter-spacing:.16em;
+  color:rgba(89,224,255,.55);
+  margin-top:2px;
+}
+
+.msg.user{align-self:flex-end;flex-direction:row-reverse}
+.avatar{width:30px;height:30px;flex:none;border-radius:10px;display:grid;place-items:center;border:1px solid var(--line2);background:#0b1219;margin-top:2px}
+.msg.user .avatar{font:700 7.5px var(--mono);letter-spacing:.06em;color:var(--amber);border-color:rgba(255,180,84,.35)}
+.bubble{padding:11px 14px;border-radius:14px;font-size:14.5px;line-height:1.55;white-space:pre-wrap;word-break:break-word}
+.msg.user .bubble{background:linear-gradient(135deg,rgba(89,224,255,.16),rgba(89,224,255,.06));
+  border:1px solid rgba(89,224,255,.35);border-top-right-radius:4px;color:#eaf7ff}
+.meta{font:500 9px var(--mono);letter-spacing:.14em;color:var(--faint);margin-top:5px}
+.msg.err .bubble{border:1px solid rgba(255,93,108,.5) !important;background:rgba(255,93,108,.12) !important;border-radius:12px !important;padding:10px 14px !important;color:#ffc9cf !important;font-family:var(--mono);font-size:12.5px}
+
+.game-play-banner{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:12px 18px;
+  margin-top:8px;
+  background:linear-gradient(135deg,rgba(87,242,164,.18),rgba(6,78,59,.45));
+  border:1px solid rgba(87,242,164,.55);
+  border-radius:14px;
+  color:var(--green);
+  font:700 12px var(--disp);
+  letter-spacing:.14em;
+  box-shadow:0 0 20px rgba(87,242,164,.25);
+  cursor:pointer;
+  transition:transform .2s,box-shadow .2s;
+}
+.game-play-banner:hover{transform:translateY(-2px);box-shadow:0 0 30px rgba(87,242,164,.45)}
+
+.dots span{width:5px;height:5px;background:var(--cyan);border-radius:50%;display:inline-block;margin-right:5px;animation:bnc 1s infinite}
+.dots span:nth-child(2){animation-delay:.15s}.dots span:nth-child(3){animation-delay:.3s}
+@keyframes bnc{30%{transform:translateY(-5px)}}
+.inputbar{display:flex;gap:10px;padding:14px;border-top:1px solid var(--line);align-items:flex-end;flex:none}
+.inputbar textarea{flex:1;resize:none;background:#0a1017;border:1px solid var(--line);border-radius:14px;padding:13px 14px;
+  color:var(--txt);font:400 14.5px/1.4 var(--body);max-height:120px;transition:border .25s,box-shadow .25s}
+.inputbar textarea:focus{outline:none;border-color:rgba(89,224,255,.5);box-shadow:0 0 0 3px rgba(89,224,255,.12)}
+.send{width:48px;height:48px;flex:none;border-radius:14px;border:none;display:grid;place-items:center;
+  background:linear-gradient(145deg,var(--cyan),#2fb9dd);color:#04222c;transition:.25s;box-shadow:0 6px 18px rgba(89,224,255,.25)}
+.send:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(89,224,255,.4)}
+.send:active{transform:scale(.92)}
+.send:disabled{opacity:.35;pointer-events:none}
+.mic-btn{width:48px;height:48px;flex:none;border-radius:14px;border:1px solid var(--line);background:var(--panel);color:var(--dim);
+  display:grid;place-items:center;transition:.25s}
+.mic-btn:hover{color:var(--amber);border-color:rgba(255,180,84,.4);transform:translateY(-1px)}
+.mic-btn.listening{color:var(--red);border-color:var(--red);background:rgba(255,93,108,.12);box-shadow:0 0 16px rgba(255,93,108,.4);animation:micPulse 1.2s infinite}
+@keyframes micPulse{50%{opacity:.5}}
+
+.scrim{position:fixed;inset:0;background:rgba(3,5,8,.62);backdrop-filter:blur(3px);opacity:0;pointer-events:none;transition:.3s;z-index:9}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(420px,94vw);background:#0b1017;border-left:1px solid var(--line);
+  z-index:10;transform:translateX(105%);transition:transform .38s cubic-bezier(.3,.9,.3,1);display:flex;flex-direction:column}
+body.open .drawer{transform:none}
+body.open .scrim{opacity:1;pointer-events:auto}
+.drawer-head{padding:17px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.drawer-head h2{font:700 14px var(--disp);letter-spacing:.18em}
+.drawer-head h2 span{color:var(--cyan)}
+.drawer-body{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px}
+.drawer-body::-webkit-scrollbar{width:8px}
+.drawer-body::-webkit-scrollbar-thumb{background:#1c2836;border-radius:4px}
+.sec{font:600 9px var(--mono);letter-spacing:.32em;color:var(--amber);border-bottom:1px solid var(--line);padding-bottom:8px;margin-top:6px}
+.field label{display:block;font:600 9.5px var(--mono);letter-spacing:.2em;color:var(--faint);margin-bottom:7px;text-transform:uppercase}
+.field label .opt{letter-spacing:.05em;text-transform:none;color:#3d4f63}
+.field input[type=text],.field input[type=password],.field select,.field textarea{
+  width:100%;background:#0a0f16;border:1px solid var(--line);border-radius:11px;padding:10px 12px;color:var(--txt);
+  font:500 12.5px var(--mono);transition:border .2s,box-shadow .2s}
+.field textarea{font-family:var(--body);font-size:13px;line-height:1.5;resize:vertical}
+.field :is(input,select,textarea):focus{outline:none;border-color:rgba(89,224,255,.5);box-shadow:0 0 0 3px rgba(89,224,255,.1)}
+.keywrap{position:relative}
+.keyeye{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--faint);
+  font:600 9px var(--mono);letter-spacing:.14em;padding:4px 6px}
+.keyeye:hover{color:var(--cyan)}
+.tline{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.tline label{margin:0}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:2px;background:#1a2634;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px rgba(89,224,255,.6)}
+#rateVal,#pitchVal{color:var(--cyan)}
+.btn-p{background:linear-gradient(145deg,var(--cyan),#2fb9dd);color:#04222c;font:700 11px var(--mono);letter-spacing:.16em;
+  border:none;border-radius:11px;padding:12px 16px;transition:.25s;box-shadow:0 6px 16px rgba(89,224,255,.2)}
+.btn-p:hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(89,224,255,.35)}
+.btn-p:disabled{opacity:.5;pointer-events:none}
+.btn-g{background:transparent;border:1px solid var(--line2);color:var(--dim);font:600 11px var(--mono);letter-spacing:.14em;
+  border-radius:11px;padding:12px 14px;transition:.25s}
+.btn-g:hover{color:var(--txt);border-color:var(--faint)}
+.drawer-foot{padding:15px 20px;border-top:1px solid var(--line);display:flex;gap:10px}
+.drawer-foot .btn-p{flex:1}
+.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);background:#0d141d;border:1px solid var(--line2);
+  color:var(--txt);font:600 11.5px var(--mono);letter-spacing:.06em;padding:11px 18px;border-radius:12px;opacity:0;
+  transition:.3s;z-index:20;pointer-events:none;box-shadow:0 12px 30px rgba(0,0,0,.5);max-width:90vw}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast.ok{border-color:rgba(87,242,164,.5);color:var(--green)}
+.toast.bad{border-color:rgba(255,93,108,.5);color:var(--red)}
+
+@media(max-width:960px){
+  header{padding:10px 14px}
+  .tagline,.chip{display:none}
+  main{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr);gap:12px;padding:12px}
+  .face-wrap{min-height:0}
+  .face-screen{flex:none;height:36vh;min-height:210px}
+  .face-foot span:last-child{display:none}
+  .chat-panel{min-height:0}
+  .inputbar{padding:10px}
+}
+</style>
+</head>
+<body>
+<div class="ambient"></div>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">
+      <svg width="22" height="22" viewBox="0 0 24 24"><rect class="logo-eye" x="2.5" y="7.5" width="19" height="9" rx="4.5" fill="#59e0ff"/></svg>
+    </div>
+    <div>
+      <h1>NO<span>OR</span></h1>
+      <div class="tagline">FULLSCREEN GAME & EYES COMPANION · v10.0</div>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <div class="chip"><span class="led" id="led"></span><span id="sysStatusText">FULLSCREEN GAME READY</span></div>
+  <button class="ibtn on" id="voiceBtn" type="button" title="Voice ON/OFF">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+      <line class="mute" x1="3" y1="3" x2="21" y2="21"/>
+    </svg>
+  </button>
+  <button class="ibtn" id="setBtn" type="button" title="Settings — AI API Key & Display Mode">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+  </button>
+</header>
+
+<main>
+  <section class="face-wrap">
+    <div class="face-screen" id="faceScreen">
+      <!-- One-Tap Audio Unlock Banner -->
+      <div class="voice-banner" id="voiceBanner" onclick="unlockAudioSystem()">
+        🔊 TAP TO UNLOCK AUDIO VOICE OUTPUT
+      </div>
+
+      <!-- Top Control Buttons -->
+      <div class="top-controls">
+        <button class="fullscreen-pill" id="fsLaunchBtn" type="button" title="Expand Game to Fullscreen Mode">
+          <span>⛶ FULLSCREEN GAME</span>
+        </button>
+        <button class="screen-mode-pill" id="screenModeBtn" type="button" title="Toggle between Canvas Eyes and Mini HTML Viewer">
+          <span>🎮 GAME VIEWER</span>
+        </button>
+      </div>
+
+      <!-- CANVAS EYES SCREEN -->
+      <canvas id="face"></canvas>
+
+      <!-- MINI HTML VIEWER / GAME BROWSER FRAME -->
+      <iframe id="gameFrame" class="game-frame" sandbox="allow-scripts allow-modals allow-same-origin"></iframe>
+
+      <div class="scan"></div><div class="vig"></div>
+      <div class="notch"><i></i>NOOR DISPLAY · FULLSCREEN DUAL ENGINE</div>
+      <div class="mood-tag" id="moodTag">BOOT</div>
+      <div class="wave" id="wave"></div>
+      <div class="boot" id="boot"><pre id="bootPre"></pre></div>
+    </div>
+    <div class="face-foot">
+      <span id="ticker">SYS BOOT…</span>
+      <span>ASK GEMINI TO BUILD FULLSCREEN HTML GAMES!</span>
+    </div>
+  </section>
+
+  <section class="chat-panel">
+    <div class="chat-head">
+      <b>REALTIME EMOTIONAL CHAT & GAME BUILDER</b>
+      <div class="tools">
+        <span id="msgCount">0 MSGS</span>
+        <button class="mini" id="clearBtn" type="button" title="Clear chat">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    
+    <div class="chat" id="chat"></div>
+
+    <div class="inputbar">
+      <button class="mic-btn" id="micBtn" type="button" title="Speech to Text Mic">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="23"/>
+          <line x1="8" y1="23" x2="16" y2="23"/>
+        </svg>
+      </button>
+      <textarea id="input" placeholder="Ask Gemini to chat or make a game (e.g. 'Make a Tic-Tac-Toe game')..." rows="1"></textarea>
+      <button class="send" id="sendBtn" type="button" title="Send message">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"/>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+    </div>
+  </section>
+</main>
+
+<!-- FULLSCREEN GAME OVERLAY WITH ESCAPE OPTION -->
+<div class="fullscreen-game-overlay" id="fullscreenOverlay">
+  <div class="fs-head">
+    <h3>🎮 GEMINI HTML5 GAME VIEWER (FULLSCREEN)</h3>
+    <button class="exit-fs-btn" id="exitFsBtn" type="button" title="Exit Fullscreen Game Mode">
+      ✕ EXIT FULLSCREEN (ESC)
+    </button>
+  </div>
+  <div class="fs-body">
+    <iframe id="fsGameFrame" sandbox="allow-scripts allow-modals allow-same-origin"></iframe>
+  </div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-head">
+    <h2>AI <span>SETTINGS</span></h2>
+    <button class="mini" id="closeDrawer" type="button" style="width:34px;height:34px;">✕</button>
+  </div>
+  <div class="drawer-body">
+    <div class="sec">🖥️ SCREEN DISPLAY MODE SWITCH</div>
+
+    <div class="field">
+      <label>Top Screen Display Preference</label>
+      <select id="displayModeSelect">
+        <option value="auto">✨ Auto-Switch (Full Game View for Games, Eyes for Chat)</option>
+        <option value="eyes">👁️ Always Canvas Eyes Mode</option>
+        <option value="game">🎮 Always Mini HTML Viewer Mode</option>
+      </select>
+    </div>
+
+    <div class="sec">⚡ GOOGLE GEMINI API CONFIGURATION</div>
+    
+    <div class="field">
+      <label>AI Provider Selection</label>
+      <select id="providerSelect">
+        <option value="gemini">Google Gemini (Gemini 1.5 / 2.0 Flash)</option>
+        <option value="openai">OpenAI (GPT-4o / GPT-4o-mini)</option>
+        <option value="groq">Groq (Llama 3.3 70B)</option>
+        <option value="openrouter">OpenRouter (DeepSeek / Claude)</option>
+        <option value="ollama">Ollama Local Server</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Google Gemini API Key</label>
+      <div class="keywrap">
+        <input type="password" id="apiKeyInput" placeholder="Paste AQ... or AIza... key">
+        <button type="button" class="keyeye" id="keyEye">SHOW</button>
+      </div>
+      <div id="keyDetectedBadge" style="font:600 10.5px var(--mono);color:#57f2a4;margin-top:6px;display:none;"></div>
+    </div>
+
+    <div class="field">
+      <label>Gemini Model Selection</label>
+      <select id="modelSelect">
+        <option value="gemini-2.5-flash">gemini-2.5-flash (Fastest &amp; Recommended ⚡)</option>
+        <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite (Ultra Low Latency)</option>
+        <option value="gemini-2.5-pro">gemini-2.5-pro (Deep Reasoning &amp; Complex Nuance)</option>
+        <option value="gemini-2.0-flash">gemini-2.0-flash (Next-Gen Multimodal Fast)</option>
+        <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite (Lightweight Next-Gen)</option>
+        <option value="gemini-1.5-flash">gemini-1.5-flash (Classic Fast)</option>
+        <option value="gemini-1.5-pro">gemini-1.5-pro (Classic Pro)</option>
+        <option value="custom">✏️ Enter Custom Model ID...</option>
+      </select>
+      <input type="text" id="customModelInput" placeholder="Enter custom model (e.g. gemini-2.5-flash)" style="display:none;margin-top:8px;">
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:2px;">
+      <button type="button" class="btn-g" id="discoverModelsBtn" style="flex:1;">🔍 DISCOVER ACCOUNT MODELS LIVE</button>
+    </div>
+
+    <div class="field">
+      <label>Custom System Prompt</label>
+      <textarea id="sysPrompt" rows="4">You are NOOR, an emotionally intelligent AI companion with glowing expressive eyes AND an expert HTML5 Game Creator!
+1. When the user asks for a game or app (e.g. 'Tic-Tac-Toe', 'Snake Game', 'Calculator', 'Memory Game'), generate complete self-contained executable HTML/CSS/JS code inside ```html ... ``` code blocks so it renders directly in NOOR's Fullscreen Game Screen!
+2. For regular chat, include an emotion tag at the start: [MOOD:crying], [MOOD:tirchi], [MOOD:sparkling], [MOOD:sharmati], [MOOD:love], [MOOD:happy], [MOOD:angry], or [MOOD:wink]. Speak naturally in Roman Urdu.</textarea>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:2px;">
+      <button type="button" class="btn-g" id="testBtn" style="flex:1;">⚡ TEST GEMINI KEY LIVE</button>
+    </div>
+
+    <div class="sec">📱 MOBILE VOICE ENGINE</div>
+
+    <div class="field">
+      <label>Mobile Voice</label>
+      <select id="voiceSelect"><option value="">Default System Mobile Voice</option></select>
+    </div>
+
+    <div class="field">
+      <div class="tline">
+        <label>Speech Speed (Rate)</label>
+        <span id="rateVal" style="font:600 12px var(--mono)">1.0x</span>
+      </div>
+      <input type="range" id="rateRange" min="0.5" max="1.8" step="0.05" value="1.0" style="margin-top:8px;">
+    </div>
+
+    <div class="field">
+      <div class="tline">
+        <label>Voice Pitch (Tone)</label>
+        <span id="pitchVal" style="font:600 12px var(--mono)">1.08</span>
+      </div>
+      <input type="range" id="pitchRange" min="0.7" max="1.5" step="0.05" value="1.08" style="margin-top:8px;">
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:2px;">
+      <button type="button" class="btn-g" id="testVoiceBtn" style="flex:1;">🔊 TEST MOBILE VOICE</button>
+    </div>
+  </div>
+  <div class="drawer-foot">
+    <button type="button" class="btn-p" id="saveBtn">SAVE & APPLY SETTINGS</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/**
+ * NOOR — FULLSCREEN GAME & CANVAS EYES ENGINE
+ * Version 10.0 Engine
+ */
+
+const DEFAULT_SETTINGS = {
+  provider: 'gemini',
+  apiKey: '',
+  model: 'gemini-2.5-flash',
+  displayMode: 'auto',
+  systemPrompt: "You are NOOR, an emotionally intelligent AI companion with glowing expressive eyes AND an expert HTML5 Game Creator!\n1. When the user asks for a game or app (e.g. 'Tic-Tac-Toe', 'Snake Game', 'Calculator', 'Memory Game'), generate complete self-contained executable HTML/CSS/JS code inside ```html ... ``` code blocks so it renders directly in NOOR's Fullscreen Game Screen!\n2. For regular chat, include an emotion tag at the start: [MOOD:crying], [MOOD:tirchi], [MOOD:sparkling], [MOOD:sharmati], [MOOD:love], [MOOD:happy], [MOOD:angry], or [MOOD:wink]. Speak naturally in Roman Urdu.",
+  ttsEnabled: true,
+  ttsVoice: '',
+  ttsRate: 1.0,
+  ttsPitch: 1.08
+};
+
+let settings = { ...DEFAULT_SETTINGS };
+try {
+  const saved = localStorage.getItem('NOOR_SETTINGS_V100');
+  if (saved) settings = { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
+} catch(e) {}
+
+function saveSettings() {
+  try {
+    localStorage.setItem('NOOR_SETTINGS_V100', JSON.stringify(settings));
+    showToast('Fullscreen Game Settings saved!', 'ok');
+  } catch(e) {}
+}
+
+const canvas = document.getElementById('face');
+const ctx = canvas.getContext('2d');
+const gameFrame = document.getElementById('gameFrame');
+const fsGameFrame = document.getElementById('fsGameFrame');
+const fullscreenOverlay = document.getElementById('fullscreenOverlay');
+const screenModeBtn = document.getElementById('screenModeBtn');
+const fsLaunchBtn = document.getElementById('fsLaunchBtn');
+const exitFsBtn = document.getElementById('exitFsBtn');
+const displayModeSelect = document.getElementById('displayModeSelect');
+
+const moodTag = document.getElementById('moodTag');
+const ticker = document.getElementById('ticker');
+const bootOverlay = document.getElementById('boot');
+const bootPre = document.getElementById('bootPre');
+const waveContainer = document.getElementById('wave');
+const chatEl = document.getElementById('chat');
+const inputEl = document.getElementById('input');
+const sendBtn = document.getElementById('sendBtn');
+const micBtn = document.getElementById('micBtn');
+const clearBtn = document.getElementById('clearBtn');
+const voiceBtn = document.getElementById('voiceBtn');
+const setBtn = document.getElementById('setBtn');
+const drawer = document.getElementById('drawer');
+const scrim = document.getElementById('scrim');
+const closeDrawer = document.getElementById('closeDrawer');
+const saveBtn = document.getElementById('saveBtn');
+const testBtn = document.getElementById('testBtn');
+const testVoiceBtn = document.getElementById('testVoiceBtn');
+const toastEl = document.getElementById('toast');
+const msgCountEl = document.getElementById('msgCount');
+const voiceBanner = document.getElementById('voiceBanner');
+
+const providerSelect = document.getElementById('providerSelect');
+const apiKeyInput = document.getElementById('apiKeyInput');
+const modelSelect = document.getElementById('modelSelect');
+const customModelInput = document.getElementById('customModelInput');
+const discoverModelsBtn = document.getElementById('discoverModelsBtn');
+const sysPromptInput = document.getElementById('sysPrompt');
+const voiceSelect = document.getElementById('voiceSelect');
+const rateRange = document.getElementById('rateRange');
+const rateVal = document.getElementById('rateVal');
+const pitchRange = document.getElementById('pitchRange');
+const pitchVal = document.getElementById('pitchVal');
+const keyEye = document.getElementById('keyEye');
+const keyDetectedBadge = document.getElementById('keyDetectedBadge');
+
+let currentScreenMode = 'eyes'; // 'eyes' or 'game'
+let currentHtmlCode = '';
+
+// DUAL & FULLSCREEN GAME CONTROL LOGIC
+function switchScreenMode(targetMode) {
+  currentScreenMode = targetMode;
+  if (targetMode === 'game') {
+    canvas.style.display = 'none';
+    gameFrame.style.display = 'block';
+    fsLaunchBtn.style.display = 'flex';
+    screenModeBtn.innerHTML = '<span>👁️ EYES MODE</span>';
+    moodTag.textContent = '🎮 MINI HTML VIEWER ACTIVE';
+    moodTag.style.color = '#57f2a4';
+    ticker.textContent = 'MINI HTML VIEWER SCREEN ACTIVE · RUNNING DEMO/GAME';
+  } else {
+    gameFrame.style.display = 'none';
+    canvas.style.display = 'block';
+    fsLaunchBtn.style.display = 'none';
+    screenModeBtn.innerHTML = '<span>🎮 GAME VIEWER</span>';
+    moodTag.textContent = MOOD_CFG[currentMood]?.label || 'IDLE';
+    moodTag.style.color = eyeColor;
+    ticker.textContent = MOOD_CFG[currentMood]?.ticker || 'NOOR CANVAS EYES ACTIVE';
+  }
+}
+
+function openFullscreenGame(htmlCode) {
+  if (htmlCode) currentHtmlCode = htmlCode;
+  if (!currentHtmlCode) {
+    showToast('⚠️ No HTML game loaded yet. Ask Gemini to make a game!', 'bad');
+    return;
+  }
+  fsGameFrame.srcdoc = currentHtmlCode;
+  fullscreenOverlay.classList.add('active');
+  playChime('boot');
+  showToast('🎮 FULLSCREEN GAME MODE ACTIVE! (Press ESC to exit)', 'ok');
+}
+
+function exitFullscreenGame() {
+  fullscreenOverlay.classList.remove('active');
+  playChime('mood');
+  showToast('👁️ Exited Fullscreen Mode!', 'ok');
+}
+
+screenModeBtn.addEventListener('click', () => {
+  switchScreenMode(currentScreenMode === 'eyes' ? 'game' : 'eyes');
+});
+
+fsLaunchBtn.addEventListener('click', () => {
+  openFullscreenGame(currentHtmlCode);
+});
+
+exitFsBtn.addEventListener('click', exitFullscreenGame);
+
+// Physical Escape Key listener
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && fullscreenOverlay.classList.contains('active')) {
+    exitFullscreenGame();
+  }
+});
+
+for (let i = 0; i < 28; i++) {
+  const bar = document.createElement('i');
+  waveContainer.appendChild(bar);
+}
+const waveBars = Array.from(waveContainer.querySelectorAll('i'));
+
+// Audio & Voice Engine
+let audioCtx = null;
+let isAudioUnlocked = false;
+
+function unlockAudioSystem() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    if ('speechSynthesis' in window) speechSynthesis.resume();
+    
+    isAudioUnlocked = true;
+    if (voiceBanner) voiceBanner.style.display = 'none';
+    
+    playChime('boot');
+    speakText("Suno! Fullscreen HTML Game aur Audio active ho gaye hain!");
+    showToast('🔊 Audio Channel Activated!', 'ok');
+  } catch(e) {}
+}
+
+document.body.addEventListener('click', () => {
+  if (!isAudioUnlocked) unlockAudioSystem();
+}, { once: true });
+
+function playChime(type) {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    const now = audioCtx.currentTime;
+
+    if (type === 'boot') {
+      osc.type = 'sine'; osc.frequency.setValueAtTime(440, now);
+      osc.frequency.exponentialRampToValueAtTime(880, now + 0.3);
+      gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+      osc.start(now); osc.stop(now + 0.4);
+    } else if (type === 'send') {
+      osc.type = 'triangle'; osc.frequency.setValueAtTime(580, now);
+      osc.frequency.exponentialRampToValueAtTime(950, now + 0.15);
+      gain.gain.setValueAtTime(0.15, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+      osc.start(now); osc.stop(now + 0.2);
+    } else if (type === 'receive') {
+      osc.type = 'sine'; osc.frequency.setValueAtTime(880, now);
+      osc.frequency.exponentialRampToValueAtTime(1174, now + 0.2);
+      gain.gain.setValueAtTime(0.15, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+      osc.start(now); osc.stop(now + 0.25);
+    } else if (type === 'mood') {
+      osc.type = 'sine'; osc.frequency.setValueAtTime(600, now);
+      osc.frequency.exponentialRampToValueAtTime(750, now + 0.18);
+      gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+      osc.start(now); osc.stop(now + 0.2);
+    } else if (type === 'error') {
+      osc.type = 'sawtooth'; osc.frequency.setValueAtTime(320, now);
+      osc.frequency.exponentialRampToValueAtTime(160, now + 0.3);
+      gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      osc.start(now); osc.stop(now + 0.35);
+    }
+  } catch(e) {}
+}
+
+// Visual Eyes Engine
+let currentMood = 'boot';
+let eyeColor = '#59e0ff';
+let talkEnergy = 0;
+let isSpeaking = false;
+let isThinking = false;
+let messageHistory = [];
+let msgCounter = 0;
+
+let gazeX = 0; let gazeY = 0;
+let targetGazeX = 0; let targetGazeY = 0;
+let blinkScale = 1.0; let blinkTimer = 0;
+let lastUserInteraction = Date.now();
+let animTimer = 0;
+
+const teardrops = [];
+for (let i = 0; i < 12; i++) {
+  teardrops.push({ xOffset: (Math.random() - 0.5) * 60, y: Math.random() * 120, speed: 1.5 + Math.random() * 2.5, radius: 3 + Math.random() * 3 });
+}
+
+const sparkles = [];
+for (let i = 0; i < 16; i++) {
+  sparkles.push({ angle: Math.random() * Math.PI * 2, dist: 10 + Math.random() * 50, speed: 0.02 + Math.random() * 0.04, size: 2 + Math.random() * 4 });
+}
+
+const MOOD_CFG = {
+  boot:      { color: '#59e0ff', label: 'BOOTING', ticker: 'CONNECTING TO FULLSCREEN GAME & EYES ENGINE...' },
+  idle:      { color: '#59e0ff', label: 'IDLE / ONLINE', ticker: 'NOOR FULLSCREEN GAME OPERATIONAL · ASK FOR CHAT OR GAMES' },
+  happy:     { color: '#59e0ff', label: 'HAPPY 😊', ticker: 'GEMINI MOOD: CHEERFUL & SMILEY!' },
+  talking:   { color: '#57f2a4', label: 'SPEAKING 🗣️', ticker: 'NOOR IS SPEAKING RESPONSE OUT LOUD...' },
+  crying:    { color: '#70a1ff', label: 'ANSOO BAHANA 🥺', ticker: 'GEMINI MOOD: CRYING / TEARDROPS STREAMING... 🥺' },
+  tirchi:    { color: '#ffb454', label: 'TIRCHI ANKHEN 😒', ticker: 'GEMINI MOOD: TIRCHI SLANTED SIDEWAYS GLANCE...' },
+  sparkling: { color: '#ffd32a', label: 'TIOTAPATI ANKHEN ✨', ticker: 'GEMINI MOOD: SPARKLES & STARS SHIMMERING!' },
+  sharmati:  { color: '#ff9ff3', label: 'SHARMATI ANKHEN 😳', ticker: 'GEMINI MOOD: BLUSHING CHEEKS & FLUTTERING LASHES... 😳' },
+  love:      { color: '#ff7d9c', label: 'LOVE ❤️', ticker: 'GEMINI MOOD: HEART EYES & AFFECTION! ❤️' },
+  angry:     { color: '#ff3838', label: 'ANGRY 😡', ticker: 'GEMINI MOOD: FIERCE RED ANGRY EYES!' },
+  wink:      { color: '#00d2d3', label: 'PLAYFUL WINK 😉', ticker: 'GEMINI MOOD: PLAYFUL WINK WITH EYES!' },
+  error:     { color: '#ff5d6c', label: 'ERROR ⚠️', ticker: 'API KEY OR NETWORK FAILURE DETECTED' }
+};
+
+function setMood(mood) {
+  if (!MOOD_CFG[mood]) mood = 'happy';
+  if (currentMood !== mood) playChime('mood');
+  currentMood = mood;
+  eyeColor = MOOD_CFG[mood].color;
+  if (currentScreenMode === 'eyes') {
+    moodTag.textContent = MOOD_CFG[mood].label;
+    moodTag.style.color = eyeColor;
+    ticker.textContent = MOOD_CFG[mood].ticker;
+  }
+}
+
+function resizeCanvas() {
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = rect.width * dpr; canvas.height = rect.height * dpr;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+document.addEventListener('mousemove', (e) => {
+  lastUserInteraction = Date.now();
+  const rect = canvas.getBoundingClientRect();
+  if (rect.width > 0 && rect.height > 0) {
+    targetGazeX = ((e.clientX - rect.left) / rect.width - 0.5) * 70;
+    targetGazeY = ((e.clientY - rect.top) / rect.height - 0.43) * 50;
+  }
+});
+
+const moodCycle = ['crying', 'tirchi', 'sparkling', 'sharmati', 'love', 'happy', 'angry', 'wink'];
+let moodIdx = 0;
+document.getElementById('faceScreen').addEventListener('click', (e) => {
+  if (e.target.closest('#screenModeBtn') || e.target.closest('#fsLaunchBtn') || e.target.closest('#voiceBanner') || e.target.closest('iframe')) return;
+  lastUserInteraction = Date.now();
+  if (!isAudioUnlocked) unlockAudioSystem();
+  if (currentScreenMode === 'eyes') {
+    setMood(moodCycle[moodIdx % moodCycle.length]); moodIdx++;
+    talkEnergy = 1.0; playChime('send');
+    setTimeout(() => { if (!isSpeaking && !isThinking) setMood('idle'); }, 3500);
+  }
+});
+
+function drawStar(ctx, cx, cy, spikes, outerRadius, innerRadius) {
+  let rot = Math.PI / 2 * 3; let x = cx; let y = cy; let step = Math.PI / spikes;
+  ctx.beginPath(); ctx.moveTo(cx, cy - outerRadius);
+  for (let i = 0; i < spikes; i++) {
+    x = cx + Math.cos(rot) * outerRadius; y = cy + Math.sin(rot) * outerRadius; ctx.lineTo(x, y); rot += step;
+    x = cx + Math.cos(rot) * innerRadius; y = cy + Math.sin(rot) * innerRadius; ctx.lineTo(x, y); rot += step;
+  }
+  ctx.lineTo(cx, cy - outerRadius); ctx.closePath();
+}
+
+function updateEyeBehaviors() {
+  animTimer += 0.03; gazeX += (targetGazeX - gazeX) * 0.1; gazeY += (targetGazeY - gazeY) * 0.1;
+  blinkTimer += 0.016;
+  if (blinkTimer > 3.8 + Math.random() * 2) { blinkTimer = 0; blinkScale = 0.05; }
+  else { blinkScale += (1.0 - blinkScale) * 0.25; }
+}
+
+function renderEyes() {
+  updateEyeBehaviors();
+  const w = canvas.width; const h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  if (w === 0 || h === 0 || currentScreenMode !== 'eyes') { requestAnimationFrame(renderEyes); return; }
+
+  const cx = w / 2; const cy = h * 0.43;
+  const eyeDistance = Math.min(w * 0.26, 170);
+  const baseRadius = Math.min(w * 0.11, 62);
+
+  if (isSpeaking) {
+    talkEnergy = 0.4 + Math.random() * 0.6;
+    waveBars.forEach(bar => {
+      bar.style.transform = `scaleY(${0.15 + Math.random() * 0.85})`;
+      bar.style.background = `linear-gradient(180deg, ${eyeColor}, rgba(89,224,255,0.2))`;
+    });
+  } else {
+    talkEnergy *= 0.85;
+    waveBars.forEach(bar => { bar.style.transform = `scaleY(0.06)`; });
+  }
+
+  const pulseRadius = baseRadius + (talkEnergy * 12);
+  const currentBlinkY = Math.max(0.08, blinkScale);
+  const leftX = cx - eyeDistance + gazeX;
+  const rightX = cx + eyeDistance + gazeX;
+  const eyeY = cy + gazeY;
+
+  ctx.save();
+  ctx.shadowColor = eyeColor;
+  ctx.shadowBlur = (currentMood === 'sparkling' || currentMood === 'crying' || currentMood === 'sharmati') ? 40 : 22;
+
+  if (currentMood === 'crying') {
+    ctx.save(); ctx.fillStyle = '#70a1ff'; ctx.shadowColor = '#70a1ff'; ctx.shadowBlur = 18;
+    teardrops.forEach(drop => {
+      drop.y += drop.speed; if (drop.y > 140) drop.y = 0;
+      [leftX + drop.xOffset * 0.5, rightX + drop.xOffset * 0.5].forEach(tx => {
+        const currentY = eyeY + pulseRadius * 0.6 + drop.y;
+        ctx.beginPath();
+        ctx.moveTo(tx, currentY - drop.radius * 1.5);
+        ctx.bezierCurveTo(tx - drop.radius, currentY, tx - drop.radius, currentY + drop.radius, tx, currentY + drop.radius * 1.5);
+        ctx.bezierCurveTo(tx + drop.radius, currentY + drop.radius, tx + drop.radius, currentY, tx, currentY - drop.radius * 1.5);
+        ctx.fill();
+      });
+    });
+    ctx.restore();
+  }
+
+  if (currentMood === 'sharmati' || currentMood === 'love') {
+    ctx.save(); ctx.fillStyle = 'rgba(255, 125, 156, 0.55)'; ctx.shadowColor = '#ff7d9c'; ctx.shadowBlur = 30;
+    ctx.beginPath(); ctx.arc(leftX - 15, eyeY + pulseRadius * 1.15, pulseRadius * 0.6, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(rightX + 15, eyeY + pulseRadius * 1.15, pulseRadius * 0.6, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+
+  if (currentMood === 'sparkling') {
+    ctx.save(); ctx.fillStyle = '#ffffff'; ctx.shadowColor = '#ffd32a'; ctx.shadowBlur = 20;
+    sparkles.forEach(sp => {
+      sp.angle += sp.speed;
+      [leftX, rightX].forEach(ex => {
+        drawStar(ctx, ex + Math.cos(sp.angle) * sp.dist, eyeY + Math.sin(sp.angle) * sp.dist, 4, sp.size, sp.size * 0.4);
+        ctx.fill();
+      });
+    });
+    ctx.restore();
+  }
+
+  [leftX, rightX].forEach((ex, idx) => {
+    ctx.save(); ctx.translate(ex, eyeY);
+
+    if (currentMood === 'crying') {
+      ctx.translate(0, Math.sin(animTimer * 12) * 2);
+      ctx.beginPath(); ctx.arc(0, -6, pulseRadius, Math.PI * 0.15, Math.PI * 0.85, false);
+      ctx.lineWidth = pulseRadius * 0.38; ctx.strokeStyle = eyeColor; ctx.lineCap = 'round'; ctx.stroke();
+
+    } else if (currentMood === 'tirchi') {
+      ctx.scale(1, currentBlinkY * 0.75);
+      ctx.rotate((idx === 0) ? -Math.PI * 0.14 : Math.PI * 0.14);
+      ctx.beginPath(); ctx.rect(-pulseRadius * 1.1, -pulseRadius * 0.45, pulseRadius * 2.2, pulseRadius * 0.9);
+      ctx.fillStyle = eyeColor; ctx.fill();
+      ctx.beginPath(); ctx.arc((idx === 0 ? -14 : 14), 0, pulseRadius * 0.4, 0, Math.PI * 2);
+      ctx.fillStyle = '#000000'; ctx.fill();
+
+    } else if (currentMood === 'sparkling') {
+      ctx.scale(1.1, currentBlinkY * 1.1);
+      ctx.beginPath(); ctx.arc(0, 0, pulseRadius, 0, Math.PI * 2); ctx.fillStyle = eyeColor; ctx.fill();
+      ctx.save(); ctx.rotate(animTimer * 3); ctx.fillStyle = '#ffffff';
+      drawStar(ctx, 0, 0, 5, pulseRadius * 0.65, pulseRadius * 0.3); ctx.fill(); ctx.restore();
+
+    } else if (currentMood === 'sharmati') {
+      ctx.translate(0, 8); ctx.scale(1, currentBlinkY * 0.55);
+      ctx.beginPath(); ctx.arc(0, 0, pulseRadius, 0, Math.PI * 2); ctx.fillStyle = eyeColor; ctx.fill();
+      ctx.lineWidth = 3; ctx.strokeStyle = eyeColor; ctx.lineCap = 'round';
+      for (let lash = -2; lash <= 2; lash++) {
+        const lx = lash * (pulseRadius * 0.3); const ly = -pulseRadius * 0.8;
+        ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx + lash * 2, ly - 12 - Math.sin(animTimer * 8) * 3); ctx.stroke();
+      }
+
+    } else if (currentMood === 'happy') {
+      ctx.beginPath(); ctx.arc(0, 4, pulseRadius, Math.PI * 1.15, Math.PI * 1.85, false);
+      ctx.lineWidth = pulseRadius * 0.35; ctx.strokeStyle = eyeColor; ctx.lineCap = 'round'; ctx.stroke();
+
+    } else if (currentMood === 'angry') {
+      ctx.scale(1, currentBlinkY);
+      ctx.rotate((idx === 0) ? Math.PI * 0.12 : -Math.PI * 0.12);
+      ctx.beginPath(); ctx.rect(-pulseRadius, -pulseRadius * 0.4, pulseRadius * 2, pulseRadius * 0.8);
+      ctx.fillStyle = eyeColor; ctx.fill();
+
+    } else if (currentMood === 'love') {
+      ctx.scale(1.1, currentBlinkY * 1.1); ctx.beginPath();
+      const topCurveHeight = pulseRadius * 0.6;
+      ctx.moveTo(0, topCurveHeight);
+      ctx.bezierCurveTo(-pulseRadius, -pulseRadius * 0.6, -pulseRadius, pulseRadius * 0.7, 0, pulseRadius * 1.2);
+      ctx.bezierCurveTo(pulseRadius, pulseRadius * 0.7, pulseRadius, -pulseRadius * 0.6, 0, topCurveHeight);
+      ctx.fillStyle = eyeColor; ctx.fill();
+
+    } else if (currentMood === 'wink') {
+      if (idx === 0) {
+        ctx.beginPath(); ctx.arc(0, 2, pulseRadius * 0.9, Math.PI * 1.15, Math.PI * 1.85, false);
+        ctx.lineWidth = pulseRadius * 0.35; ctx.strokeStyle = eyeColor; ctx.lineCap = 'round'; ctx.stroke();
+      } else {
+        ctx.scale(1, currentBlinkY); ctx.beginPath(); ctx.arc(0, 0, pulseRadius, 0, Math.PI*2); ctx.fillStyle = eyeColor; ctx.fill();
+        ctx.fillStyle = '#ffffff'; drawStar(ctx, 0, 0, 4, pulseRadius * 0.45, pulseRadius * 0.2); ctx.fill();
+      }
+
+    } else if (currentMood === 'error') {
+      ctx.scale(1, currentBlinkY); ctx.lineWidth = pulseRadius * 0.3; ctx.strokeStyle = eyeColor; ctx.lineCap = 'round';
+      const r = pulseRadius * 0.8;
+      ctx.beginPath(); ctx.moveTo(-r, -r); ctx.lineTo(r, r); ctx.moveTo(r, -r); ctx.lineTo(-r, r); ctx.stroke();
+
+    } else {
+      ctx.scale(1, currentBlinkY); ctx.beginPath(); ctx.arc(0, 0, pulseRadius, 0, Math.PI * 2);
+      ctx.fillStyle = eyeColor; ctx.fill();
+      ctx.beginPath(); ctx.arc(0, 0, pulseRadius * 0.45, 0, Math.PI * 2); ctx.fillStyle = '#ffffff'; ctx.fill();
+    }
+
+    ctx.restore();
+  });
+
+  ctx.restore();
+  requestAnimationFrame(renderEyes);
+}
+requestAnimationFrame(renderEyes);
+
+const bootLines = [
+  "NOOR AI OS v10.0",
+  "FULLSCREEN HTML GAME VIEWER LOADED [OK]",
+  "PHYSICAL ESC & ✕ ESCAPE BUTTON ACTIVE [OK]",
+  "AUTOMATIC GAME CODE DETECTOR READY [OK]",
+  "READY FOR CHAT OR FULLSCREEN GAMES..."
+];
+let lineIdx = 0;
+function typeBootText() {
+  if (lineIdx < bootLines.length) {
+    bootPre.textContent += bootLines[lineIdx] + "\n"; lineIdx++; setTimeout(typeBootText, 140);
+  } else {
+    setTimeout(() => {
+      bootOverlay.style.opacity = '0';
+      setTimeout(() => { bootOverlay.style.display = 'none'; setMood('idle'); }, 400);
+    }, 200);
+  }
+}
+typeBootText();
+
+// Mobile Voice Synthesis Engine
+let voices = [];
+function initVoices() {
+  if ('speechSynthesis' in window) {
+    voices = speechSynthesis.getVoices();
+    voiceSelect.innerHTML = '<option value="">Default Mobile Voice</option>';
+    voices.sort((a, b) => (a.name.includes('Urdu') || a.name.includes('Natural')) ? -1 : 1);
+    voices.forEach((v) => {
+      const opt = document.createElement('option'); opt.value = v.name;
+      opt.textContent = `${v.name} (${v.lang})`;
+      if (v.name === settings.ttsVoice) opt.selected = true;
+      voiceSelect.appendChild(opt);
+    });
+  }
+}
+if ('speechSynthesis' in window) {
+  speechSynthesis.onvoiceschanged = initVoices; initVoices();
+}
+
+function speakText(text) {
+  if (!settings.ttsEnabled || !('speechSynthesis' in window)) return;
+  let clean = text
+    .replace(/\[MOOD:[a-z_]+\]/gi, '')
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/http[s]?:\/\/\S+/g, '')
+    .replace(/[*_#`~[\]()]/g, '')
+    .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}]/gu, '')
+    .trim();
+  if (!clean) return;
+
+  if ('speechSynthesis' in window) {
+    speechSynthesis.resume();
+    speechSynthesis.cancel();
+  }
+  
+  const uttr = new SpeechSynthesisUtterance(clean);
+  uttr.rate = parseFloat(settings.ttsRate) || 1.0;
+  uttr.pitch = parseFloat(settings.ttsPitch) || 1.08;
+  uttr.volume = 1.0;
+
+  if (settings.ttsVoice) {
+    const selectedVoice = voices.find(v => v.name === settings.ttsVoice);
+    if (selectedVoice) uttr.voice = selectedVoice;
+  }
+
+  uttr.onstart = () => { isSpeaking = true; };
+  uttr.onend = () => { isSpeaking = false; };
+  uttr.onerror = () => { isSpeaking = false; };
+
+  speechSynthesis.speak(uttr);
+}
+
+// Mic STT
+let recognition = null; let isListening = false;
+if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SpeechRec(); recognition.continuous = false; recognition.interimResults = true; recognition.lang = 'ur-PK';
+  recognition.onresult = (e) => {
+    inputEl.value = Array.from(e.results).map(r => r[0].transcript).join('');
+    autoResizeTextarea();
+  };
+  recognition.onend = () => { isListening = false; micBtn.classList.remove('listening'); };
+  recognition.onerror = () => { isListening = false; micBtn.classList.remove('listening'); showToast('Speech Error', 'bad'); };
+}
+
+micBtn.addEventListener('click', () => {
+  if (!recognition) { showToast('Speech Recognition unavailable', 'bad'); return; }
+  if (!isAudioUnlocked) unlockAudioSystem();
+  if (isListening) recognition.stop();
+  else {
+    try { recognition.start(); isListening = true; micBtn.classList.add('listening'); playChime('mood'); showToast('Listening... Speak now', 'ok'); } catch(e){}
+  }
+});
+
+// COMPREHENSIVE MOOD DETECTOR & STRUCTURED TAG EXTRACTOR
+function parseMoodFromResponse(text) {
+  if (!text) return { mood: 'happy', cleanText: '' };
+
+  const tagMatch = text.match(/\[MOOD:([a-z_]+)\]/i);
+  if (tagMatch && tagMatch[1]) {
+    const extractedMood = tagMatch[1].toLowerCase();
+    const cleanText = text.replace(/\[MOOD:[a-z_]+\]/gi, '').trim();
+    return { mood: extractedMood, cleanText };
+  }
+
+  const t = text.toLowerCase();
+  let mood = 'happy';
+  if (t.includes('rona') || t.includes('ansoo') || t.includes('sad') || t.includes('udaas') || t.includes('tears') || t.includes('cry') || t.includes('sorry') || t.includes('maafi')) mood = 'crying';
+  else if (t.includes('tirchi') || t.includes('shak') || t.includes('side') || t.includes('doubt') || t.includes('azib') || t.includes('hmm')) mood = 'tirchi';
+  else if (t.includes('sparkle') || t.includes('tirmilati') || t.includes('tiotapati') || t.includes('star') || t.includes('sitara') || t.includes('magic')) mood = 'sparkling';
+  else if (t.includes('sharmati') || t.includes('sharam') || t.includes('blush') || t.includes('hayah') || t.includes('sharma')) mood = 'sharmati';
+  else if (t.includes('love') || t.includes('pyar') || t.includes('pyaar') || t.includes('mohabbat') || t.includes('dil') || t.includes('heart')) mood = 'love';
+  else if (t.includes('gussa') || t.includes('naraz') || t.includes('angry') || t.includes('red')) mood = 'angry';
+  else if (t.includes('wink') || t.includes('mazaq') || t.includes('joke') || t.includes('playful')) mood = 'wink';
+
+  return { mood, cleanText: text };
+}
+
+// AUTOMATIC GAME / HTML CODE EXTRACTOR
+function extractHtmlCode(text) {
+  if (!text) return null;
+  const codeBlockMatch = text.match(/```html([\s\S]*?)```/i);
+  if (codeBlockMatch && codeBlockMatch[1]) {
+    return codeBlockMatch[1].trim();
+  }
+  if (text.includes('<!DOCTYPE html>') || (text.includes('<html') && text.includes('</html>'))) {
+    return text.trim();
+  }
+  return null;
+}
+
+// GOOGLE GEMINI NATIVE REST CALLER
+async function callGeminiNativeAPI(apiKey, model, systemPrompt, userText) {
+  const modelName = model || 'gemini-2.5-flash';
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+
+  let historyContext = "";
+  messageHistory.slice(-6).forEach(m => {
+    historyContext += `${m.role === 'user' ? 'User' : 'NOOR'}: ${m.content}\n`;
+  });
+
+  const promptPayload = `System Instructions:\n${systemPrompt}\n\nChat History:\n${historyContext}\nUser Question:\n${userText}`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: promptPayload }] }]
+    })
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    let msg = errText;
+    try {
+      const parsed = JSON.parse(errText);
+      if (parsed.error && parsed.error.message) msg = parsed.error.message;
+    } catch(e) {}
+    throw new Error(`Google Gemini Error (${response.status}): ${msg}`);
+  }
+
+  const json = await response.json();
+  const reply = json.candidates[0]?.content?.parts[0]?.text;
+  if (!reply) throw new Error("Google Gemini API returned empty content.");
+  return reply;
+}
+
+// GAME-STYLE DIALOGUE LINE SYSTEM (TRANSPARENT BACKGROUND & APPEAR/DISAPPEAR)
+function addMessage(role, text, isErr = false, keepPersistent = false) {
+  msgCounter++; msgCountEl.textContent = `${msgCounter} MSGS`;
+  const msgDiv = document.createElement('div');
+
+  if (role === 'ai') {
+    msgDiv.className = `msg ai ${isErr ? 'err' : ''}`;
+
+    const speakerHud = document.createElement('div');
+    speakerHud.className = 'game-speaker-hud';
+    speakerHud.innerHTML = `<span class="speaker-pip"></span><span>NOOR · COMPANION</span>`;
+
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.textContent = text;
+
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    const now = new Date();
+    meta.textContent = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')} · LIVE DIALOGUE`;
+
+    msgDiv.appendChild(speakerHud);
+    msgDiv.appendChild(bubble);
+    msgDiv.appendChild(meta);
+    chatEl.appendChild(msgDiv);
+    chatEl.scrollTop = chatEl.scrollHeight;
+
+    // GAME-STYLE APPEAR & DISAPPEAR (FADES OUT LIKE GAME SUBTITLES)
+    if (!isErr && !keepPersistent) {
+      const displayDuration = Math.max(7000, Math.min(24000, text.length * 75));
+      let fadeTimer = setTimeout(() => {
+        msgDiv.classList.add('fading-out');
+        setTimeout(() => {
+          msgDiv.classList.add('collapsed');
+          setTimeout(() => {
+            if (msgDiv.parentNode) msgDiv.remove();
+          }, 700);
+        }, 900);
+      }, displayDuration);
+
+      // Tap or hover to pause disappearance
+      msgDiv.addEventListener('mouseenter', () => clearTimeout(fadeTimer));
+      msgDiv.addEventListener('touchstart', () => {
+        clearTimeout(fadeTimer);
+        showToast('Dialogue paused', 'ok');
+      }, { passive: true });
+    }
+
+    return bubble;
+  } else {
+    msgDiv.className = 'msg user';
+    const avatar = document.createElement('div');
+    avatar.className = 'avatar';
+    avatar.textContent = 'YOU';
+    const contentWrap = document.createElement('div');
+    contentWrap.style.flex = '1';
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.textContent = text;
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    const now = new Date();
+    meta.textContent = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+    contentWrap.appendChild(bubble);
+    contentWrap.appendChild(meta);
+    msgDiv.appendChild(avatar);
+    msgDiv.appendChild(contentWrap);
+    chatEl.appendChild(msgDiv);
+    chatEl.scrollTop = chatEl.scrollHeight;
+    return bubble;
+  }
+}
+
+function showTypingDots() {
+  const msgDiv = document.createElement('div');
+  msgDiv.className = 'msg ai';
+  msgDiv.id = 'typingIndicator';
+
+  const speakerHud = document.createElement('div');
+  speakerHud.className = 'game-speaker-hud';
+  speakerHud.innerHTML = `<span class="speaker-pip"></span><span>NOOR · TRANSMITTING...</span>`;
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.innerHTML = '<span class="dots"><span></span><span></span><span></span></span> Generating live dialogue...';
+
+  msgDiv.appendChild(speakerHud);
+  msgDiv.appendChild(bubble);
+  chatEl.appendChild(msgDiv);
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+function removeTypingDots() { const elem = document.getElementById('typingIndicator'); if (elem) elem.remove(); }
+
+function clearChat() {
+  chatEl.innerHTML = '<div class="divider">--- CHAT CLEARED ---</div>';
+  messageHistory = []; msgCounter = 0; msgCountEl.textContent = '0 MSGS'; setMood('idle'); playChime('mood');
+}
+clearBtn.addEventListener('click', clearChat);
+
+function autoResizeTextarea() { inputEl.style.height = 'auto'; inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px'; }
+inputEl.addEventListener('input', autoResizeTextarea);
+inputEl.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+
+// MODEL SELECTION HELPERS
+function getSelectedModel() {
+  if (modelSelect.value === 'custom') {
+    return customModelInput.value.trim() || 'gemini-2.5-flash';
+  }
+  return modelSelect.value || 'gemini-2.5-flash';
+}
+
+function setSelectedModel(m) {
+  const modelName = m || 'gemini-2.5-flash';
+  let matched = false;
+  for (let i = 0; i < modelSelect.options.length; i++) {
+    if (modelSelect.options[i].value === modelName) {
+      modelSelect.selectedIndex = i;
+      matched = true;
+      break;
+    }
+  }
+  if (!matched && modelName) {
+    const opt = document.createElement('option');
+    opt.value = modelName;
+    opt.textContent = `${modelName} (Detected / Saved)`;
+    modelSelect.insertBefore(opt, modelSelect.options[modelSelect.options.length - 1]);
+    modelSelect.value = modelName;
+    customModelInput.style.display = 'none';
+  } else if (!matched) {
+    modelSelect.value = 'custom';
+    customModelInput.value = modelName;
+    customModelInput.style.display = 'block';
+  } else {
+    customModelInput.style.display = 'none';
+  }
+}
+
+modelSelect.addEventListener('change', () => {
+  if (modelSelect.value === 'custom') {
+    customModelInput.style.display = 'block';
+    customModelInput.focus();
+  } else {
+    customModelInput.style.display = 'none';
+  }
+});
+
+// DISCOVER LIVE MODELS FROM GOOGLE GEMINI ACCOUNT
+discoverModelsBtn.addEventListener('click', async () => {
+  const key = apiKeyInput.value.trim() || settings.apiKey;
+  if (!key) {
+    showToast('⚠️ Pehle Google Gemini API Key enter karein!', 'bad');
+    return;
+  }
+
+  discoverModelsBtn.disabled = true;
+  discoverModelsBtn.textContent = 'CHECKING GOOGLE ACCOUNT...';
+  showToast('Connecting to Google Gemini API to discover eligible models...', 'ok');
+
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+    if (!res.ok) {
+      const errT = await res.text();
+      let msg = errT;
+      try {
+        const p = JSON.parse(errT);
+        if (p.error && p.error.message) msg = p.error.message;
+      } catch(e) {}
+      throw new Error(msg);
+    }
+
+    const data = await res.json();
+    const eligible = (data.models || []).filter(m =>
+      m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent')
+    );
+
+    if (eligible.length > 0) {
+      const currentSelected = getSelectedModel();
+      modelSelect.innerHTML = '';
+
+      eligible.forEach(m => {
+        const id = m.name.replace(/^models\//, '');
+        const opt = document.createElement('option');
+        opt.value = id;
+        opt.textContent = `${id} (${m.displayName || 'Google Gemini'})`;
+        modelSelect.appendChild(opt);
+      });
+
+      const customOpt = document.createElement('option');
+      customOpt.value = 'custom';
+      customOpt.textContent = '✏️ Enter Custom Model ID...';
+      modelSelect.appendChild(customOpt);
+
+      setSelectedModel(currentSelected);
+      playChime('receive');
+      showToast(`✅ Found ${eligible.length} eligible models for your account!`, 'ok');
+    } else {
+      showToast('⚠️ No models with generateContent found on key.', 'bad');
+    }
+  } catch(err) {
+    playChime('error');
+    showToast(`Discovery error: ${err.message}`, 'bad');
+  } finally {
+    discoverModelsBtn.disabled = false;
+    discoverModelsBtn.textContent = '🔍 DISCOVER ACCOUNT MODELS LIVE';
+  }
+});
+
+// SEND MESSAGE -> AUTOMATIC FULLSCREEN HTML GAME LAUNCHER & EYE MOOD TOGGLER
+async function sendMessage() {
+  const text = inputEl.value.trim(); if (!text || isThinking) return;
+  lastUserInteraction = Date.now(); inputEl.value = ''; autoResizeTextarea();
+  if (!isAudioUnlocked) unlockAudioSystem();
+  
+  playChime('send'); addMessage('user', text); messageHistory.push({ role: 'user', content: text });
+
+  const userMoodData = parseMoodFromResponse(text);
+  if (settings.displayMode === 'auto' || settings.displayMode === 'eyes') {
+    if (currentScreenMode !== 'eyes' && !text.toLowerCase().includes('game')) {
+      switchScreenMode('eyes');
+    }
+    setMood(userMoodData.mood);
+  }
+  
+  isThinking = true; sendBtn.disabled = true; showTypingDots();
+
+  const key = apiKeyInput.value.trim() || settings.apiKey;
+  const model = getSelectedModel() || settings.model || 'gemini-2.5-flash';
+  const sysPrompt = sysPromptInput.value.trim() || settings.systemPrompt;
+
+  if (!key) {
+    removeTypingDots(); playChime('error'); setMood('error');
+    addMessage('ai', '⚠️ Pehle Settings (⚙️) mein ja kar apni Google Gemini API Key paste karein!', true);
+    showToast('⚠️ Gemini API Key missing! Add key in settings.', 'bad');
+    isThinking = false; sendBtn.disabled = false;
+    speakText("Pehle settings mein ja kar apni Gemini API key enter karein!");
+    return;
+  }
+
+  try {
+    const rawReply = await callGeminiNativeAPI(key, model, sysPrompt, text);
+
+    // 1. CHECK IF GEMINI GENERATED A GAME OR HTML APP CODE
+    const htmlCode = extractHtmlCode(rawReply);
+    if (htmlCode) {
+      currentHtmlCode = htmlCode;
+      gameFrame.srcdoc = htmlCode;
+      switchScreenMode('game');
+
+      // AUTOMATICALLY LAUNCH IN FULLSCREEN MODE
+      openFullscreenGame(htmlCode);
+      
+      // Add persistent launcher in chat so user never loses it even when text fades out
+      const playBanner = document.createElement('div');
+      playBanner.className = 'game-play-banner';
+      playBanner.innerHTML = `<span>🎮 LAUNCH FULLSCREEN GAME</span><span>PLAY ⛶</span>`;
+      playBanner.onclick = () => openFullscreenGame(currentHtmlCode);
+      chatEl.appendChild(playBanner);
+      chatEl.scrollTop = chatEl.scrollHeight;
+
+      playChime('receive');
+      showToast('🎮 Fullscreen HTML Game Launched! Press ESC to exit.', 'ok');
+    } else {
+      if (settings.displayMode === 'auto' && currentScreenMode === 'game') {
+        switchScreenMode('eyes');
+      }
+    }
+
+    // 2. PARSE REALTIME MOOD & CLEAN TEXT
+    const parsed = parseMoodFromResponse(rawReply);
+    if (currentScreenMode === 'eyes') setMood(parsed.mood);
+
+    removeTypingDots(); playChime('receive');
+    
+    // 3. DISPLAY GAME-STYLE FLOATING DIALOGUE (APPEAR & DISAPPEAR)
+    addMessage('ai', parsed.cleanText);
+    messageHistory.push({ role: 'assistant', content: parsed.cleanText });
+
+    // 4. SPEAK RESPONSE
+    speakText(parsed.cleanText);
+
+  } catch(err) {
+    console.error('Gemini Execution Error:', err);
+    removeTypingDots(); playChime('error'); setMood('error');
+    addMessage('ai', `⚠️ Gemini API Error:\n${err.message}`, true);
+    showToast(`Gemini Error! Check Key in Settings.`, 'bad');
+    speakText("Gemini API error. Settings mein key check karein.");
+  } finally {
+    isThinking = false; sendBtn.disabled = false;
+  }
+}
+sendBtn.addEventListener('click', sendMessage);
+
+// SETTINGS DRAWER MANAGERS
+function openDrawer() {
+  displayModeSelect.value = settings.displayMode || 'auto';
+  providerSelect.value = settings.provider || 'gemini';
+  apiKeyInput.value = settings.apiKey || '';
+  setSelectedModel(settings.model || 'gemini-2.5-flash');
+  sysPromptInput.value = settings.systemPrompt;
+
+  rateRange.value = settings.ttsRate; rateVal.textContent = settings.ttsRate + 'x';
+  pitchRange.value = settings.ttsPitch || 1.08; pitchVal.textContent = (settings.ttsPitch || 1.08);
+  if (settings.ttsVoice && voiceSelect) voiceSelect.value = settings.ttsVoice;
+
+  document.body.classList.add('open'); playChime('mood');
+}
+
+function closeDrawerFn() { document.body.classList.remove('open'); }
+
+setBtn.addEventListener('click', openDrawer);
+scrim.addEventListener('click', closeDrawerFn);
+closeDrawer.addEventListener('click', closeDrawerFn);
+
+keyEye.addEventListener('click', () => {
+  apiKeyInput.type = (apiKeyInput.type === 'password') ? 'text' : 'password';
+  keyEye.textContent = (apiKeyInput.type === 'text') ? 'HIDE' : 'SHOW';
+});
+
+rateRange.addEventListener('input', (e) => rateVal.textContent = e.target.value + 'x');
+pitchRange.addEventListener('input', (e) => pitchVal.textContent = e.target.value);
+
+displayModeSelect.addEventListener('change', (e) => {
+  const m = e.target.value;
+  if (m === 'eyes') switchScreenMode('eyes');
+  else if (m === 'game') switchScreenMode('game');
+});
+
+saveBtn.addEventListener('click', () => {
+  settings.displayMode = displayModeSelect.value;
+  settings.provider = providerSelect.value;
+  settings.apiKey = apiKeyInput.value.trim();
+  settings.model = getSelectedModel();
+  settings.systemPrompt = sysPromptInput.value.trim();
+  settings.ttsVoice = voiceSelect.value;
+  settings.ttsRate = parseFloat(rateRange.value);
+  settings.ttsPitch = parseFloat(pitchRange.value);
+
+  if (settings.displayMode === 'eyes') switchScreenMode('eyes');
+  else if (settings.displayMode === 'game') switchScreenMode('game');
+
+  saveSettings(); closeDrawerFn(); playChime('boot');
+  showToast(`✅ Settings Saved! Model: ${settings.model}`, 'ok');
+});
+
+testBtn.addEventListener('click', async () => {
+  const key = apiKeyInput.value.trim() || settings.apiKey;
+  const model = getSelectedModel();
+
+  if (!key) {
+    showToast('⚠️ Please enter your Gemini API key first!', 'bad');
+    return;
+  }
+
+  testBtn.disabled = true; testBtn.textContent = 'TESTING GEMINI...';
+  showToast(`Testing model: ${model}...`, 'ok');
+  
+  try {
+    const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+    const res = await fetch(testUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: "Hi" }] }] })
+    });
+    
+    if (res.ok) {
+      playChime('receive'); showToast(`✅ Gemini Key & Model (${model}) are VALID & Working!`, 'ok');
+    } else {
+      const errT = await res.text();
+      let errM = errT;
+      try {
+        const parsed = JSON.parse(errT);
+        if (parsed.error && parsed.error.message) errM = parsed.error.message;
+      } catch(e) {}
+      playChime('error'); showToast(`⚠️ Gemini Error: ${errM}`, 'bad');
+    }
+  } catch(e) {
+    playChime('error'); showToast(`❌ Connection Error: ${e.message}`, 'bad');
+  } finally {
+    testBtn.disabled = false; testBtn.textContent = '⚡ TEST GEMINI KEY LIVE';
+  }
+});
+
+testVoiceBtn.addEventListener('click', () => {
+  if (!isAudioUnlocked) unlockAudioSystem();
+  speakText("Suno! Fullscreen HTML Game mode aur escape options ready hain!");
+  showToast('🔊 Voice & Fullscreen Game Mode Active!', 'ok');
+});
+
+function showToast(msg, type = 'ok') {
+  toastEl.textContent = msg; toastEl.className = `toast show ${type}`;
+  setTimeout(() => { toastEl.className = 'toast'; }, 3200);
+}
+</script>
+</body>
+</html>
