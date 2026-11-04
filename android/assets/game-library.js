@@ -39,10 +39,16 @@
     if(!b)return;
     if(b.dataset.play)play(b.dataset.play); else remove(b.dataset.delete);
   });
-  $('kidPromptChips')?.addEventListener('click',e=>{const b=e.target.closest('[data-prompt]');if(!b)return;const input=$('input');input.value=b.dataset.prompt;input.focus();});\n  $('saveGameBtn')?.addEventListener('click',saveCurrent);
+  $('kidPromptChips')?.addEventListener('click',e=>{const b=e.target.closest('[data-prompt]');if(!b)return;const input=$('input');input.value=b.dataset.prompt;input.focus();});
+  $('saveGameBtn')?.addEventListener('click',saveCurrent);
   $('gameShelfToggle')?.addEventListener('click',()=> $('gameShelfWrap')?.classList.toggle('expanded'));
   $('openLibraryBtn')?.addEventListener('click',()=>{ $('drawer')?.classList.add('open'); $('scrim')?.classList.add('show'); });
-  window.addEventListener('noor-game-ready',()=>{\n    const b=$('saveGameBtn'); if(b)b.hidden=false;\n    const code=window.currentHtmlCode; if(!code)return;\n    library.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),title:'Recent game · '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),html:code,savedAt:Date.now(),recent:true});\n    library=library.slice(0,LIMIT); persist();\n  });
+  window.addEventListener('noor-game-ready',()=>{
+    const b=$('saveGameBtn'); if(b)b.hidden=false;
+    const code=window.currentHtmlCode; if(!code)return;
+    library.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),title:'Recent game · '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),html:code,savedAt:Date.now(),recent:true});
+    library=library.slice(0,LIMIT); persist();
+  });
   render();
   window.NoorGameLibrary={render,saveCurrent,play};
 })();
