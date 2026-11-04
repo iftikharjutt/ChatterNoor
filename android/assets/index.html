@@ -1451,7 +1451,8 @@ async function sendMessage() {
     const htmlCode = extractHtmlCode(rawReply);
     if (htmlCode) {
       currentHtmlCode = prepareGameHtml(htmlCode);
-      window.dispatchEvent(new Event('noor-game-ready'));\n      gameFrame.srcdoc = currentHtmlCode;
+      window.dispatchEvent(new Event('noor-game-ready'));
+      gameFrame.srcdoc = currentHtmlCode;
       switchScreenMode('game');
 
       // AUTOMATICALLY LAUNCH IN FULLSCREEN MODE
