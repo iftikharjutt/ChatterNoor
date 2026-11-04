@@ -43,6 +43,8 @@ jobs:
           Path("/tmp/chatternoor-app.js").write_text(scripts[0])
           PY
           node --check /tmp/chatternoor-app.js
+          node --check game-library.js
+          node --check android/assets/game-library.js
 
       - name: Prepare Android build environment
         run: |
