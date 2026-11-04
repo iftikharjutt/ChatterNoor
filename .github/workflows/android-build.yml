@@ -45,6 +45,7 @@ jobs:
           node --check /tmp/chatternoor-app.js
           node --check game-library.js
           node --check android/assets/game-library.js
+          node --check server/src/server.js
 
       - name: Prepare Android build environment
         run: |
