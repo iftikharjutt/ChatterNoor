@@ -302,7 +302,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
   .chat-panel{min-height:0}
   .inputbar{padding:10px}
 }
-</style>
+.game-shelf-wrap{position:absolute;z-index:8;left:12px;right:12px;bottom:42px;display:none;background:rgba(7,12,25,.9);border:1px solid #39496c;border-radius:14px;padding:9px}.game-shelf-wrap.expanded{display:block}.game-shelf-head{display:flex;justify-content:space-between;color:#b9c9ff;font-size:11px;margin-bottom:7px}.game-shelf{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory}.game-card{flex:0 0 155px;scroll-snap-align:start;background:#1f2a44;border:1px solid #39496c;border-radius:10px;padding:9px;color:#eef2ff}.game-card-title{font-weight:700;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.game-card small{display:block;color:#9ba8c8;font-size:10px;margin:4px 0 7px}.game-card-actions{display:flex;gap:5px}.game-card-actions button,.shelf-action{border:0;border-radius:7px;padding:6px 9px;background:#536dff;color:white;font-size:11px;font-weight:700}.game-card-actions .secondary{background:#35415d}.game-empty{font-size:11px;color:#a8b3d0;padding:8px}.shelf-action{background:#273454;border:1px solid #536dff66}.quick-settings{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}.quick-settings button{flex:1;min-width:95px;border:1px solid #39496c;background:#17223b;color:#dbe6ff;border-radius:10px;padding:10px 8px;font-weight:700}.settings-hint{font-size:11px;color:#91a0c3;margin:-5px 0 12px}#saveGameBtn[hidden]{display:none}@media(max-width:600px){.game-shelf-wrap{bottom:36px;left:7px;right:7px}.game-card{flex-basis:138px}}</style>
 </head>
 <body>
 <div class="ambient"></div>
@@ -345,7 +345,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
         <button class="fullscreen-pill" id="fsLaunchBtn" type="button" title="Expand Game to Fullscreen Mode">
           <span>⛶ FULLSCREEN GAME</span>
         </button>
-        <button class="screen-mode-pill" id="screenModeBtn" type="button" title="Toggle between Canvas Eyes and Mini HTML Viewer">
+        <button class="shelf-action" id="saveGameBtn" hidden type="button">＋ SAVE GAME</button><button class="shelf-action" id="gameShelfToggle" type="button">MY GAMES <span id="gameShelfCount">0</span> ▾</button><button class="screen-mode-pill" id="screenModeBtn" type="button" title="Toggle between Canvas Eyes and Mini HTML Viewer">
           <span>🎮 GAME VIEWER</span>
         </button>
       </div>
@@ -353,7 +353,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
       <!-- CANVAS EYES SCREEN -->
       <canvas id="face"></canvas>
 
-      <!-- MINI HTML VIEWER / GAME BROWSER FRAME -->
+      <div class="game-shelf-wrap" id="gameShelfWrap"><div class="game-shelf-head"><span>RECENT &amp; SAVED GAMES · THIS DEVICE</span><span>SWIPE ↔</span></div><div class="game-shelf" id="gameShelf"></div></div><!-- MINI HTML VIEWER / GAME BROWSER FRAME -->
       <iframe id="gameFrame" class="game-frame" sandbox="allow-scripts allow-modals"></iframe>
 
       <div class="scan"></div><div class="vig"></div>
@@ -422,7 +422,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
     <h2>AI <span>SETTINGS</span></h2>
     <button class="mini" id="closeDrawer" type="button" style="width:34px;height:34px;">✕</button>
   </div>
-  <div class="drawer-body">
+  <div class="drawer-body"><div class="quick-settings"><button type="button" onclick="switchScreenMode('eyes')">👁 Eyes screen</button><button type="button" onclick="switchScreenMode('game')">🎮 Game viewer</button><button type="button" id="openLibraryBtn">🗂 My games</button></div><p class="settings-hint">Quick actions first. API, model and voice options remain below.</p><div class="sec">🗂️ MY SAVED GAMES</div><div id="savedGamesList" class="game-shelf" style="margin-bottom:14px"></div>
     <div class="sec">🖥️ SCREEN DISPLAY MODE SWITCH</div>
 
     <div class="field">
@@ -641,7 +641,7 @@ const keyEye = document.getElementById('keyEye');
 const keyDetectedBadge = document.getElementById('keyDetectedBadge');
 
 let currentScreenMode = 'eyes'; // 'eyes' or 'game'
-let currentHtmlCode = '';
+let currentHtmlCode = ''; Object.defineProperty(window,'currentHtmlCode',{get:()=>currentHtmlCode,set:v=>{currentHtmlCode=v;}});
 
 // DUAL & FULLSCREEN GAME CONTROL LOGIC
 function switchScreenMode(targetMode) {
@@ -1606,5 +1606,5 @@ function showToast(msg, type = 'ok') {
   setTimeout(() => { toastEl.className = 'toast'; }, 3200);
 }
 </script>
-</body>
+<script src="game-library.js"></script></body>
 </html>
