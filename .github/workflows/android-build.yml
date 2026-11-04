@@ -11,6 +11,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,11 +24,12 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Install Android SDK tools
-        uses: android-actions/setup-android@v3
-
-      - name: Install SDK packages
-        run: sdkmanager "platforms;android-34" "build-tools;34.0.0"
+      - name: Install Android SDK packages
+        run: |
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)"
+          echo "Using $SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null
+          "$SDKMANAGER" --install "platforms;android-34" "build-tools;34.0.0"
 
       - name: Add Android build-tools to PATH
         run: echo "$ANDROID_HOME/build-tools/34.0.0" >> "$GITHUB_PATH"
