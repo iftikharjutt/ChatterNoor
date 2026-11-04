@@ -628,7 +628,7 @@ function updateAiModeFields() {
   byokKeyField.style.display = byok ? 'block' : 'none';
   backendUrlField.style.display = byok ? 'none' : 'block';
 }
-aiModeSelect.addEventListener('change', updateAiModeFields);
+
 
 function getDeviceId() {
   let id = localStorage.getItem('NOOR_DEVICE_ID');
@@ -721,6 +721,7 @@ const aiModeSelect = document.getElementById('aiModeSelect');
 const backendUrlInput = document.getElementById('backendUrlInput');
 const backendUrlField = document.getElementById('backendUrlField');
 const byokKeyField = document.getElementById('byokKeyField');
+aiModeSelect.addEventListener('change', updateAiModeFields);
 const energyPill = document.getElementById('energyPill');
 const modelSelect = document.getElementById('modelSelect');
 const customModelInput = document.getElementById('customModelInput');
