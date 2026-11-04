@@ -113,7 +113,7 @@ main{position:relative;z-index:1;flex:1;min-height:0;display:grid;grid-template-
   background:linear-gradient(180deg,rgba(16,23,32,.94),rgba(10,15,21,.94))}
 .chat-head{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-bottom:1px solid var(--line);flex:none}
 .chat-head b{font:600 10px var(--mono);letter-spacing:.3em;color:var(--dim)}
-.chat-head .tools{display:flex;align-items:center;gap:10px}
+.chat-head .tools{display:flex;align-items:center;gap:10px}.energy-pill{font:700 10px var(--mono);color:#072419;background:linear-gradient(135deg,#57f2a4,#b5ffd8);padding:7px 10px;border-radius:99px;white-space:nowrap;box-shadow:0 0 14px rgba(87,242,164,.18)}
 #msgCount{font:600 9px var(--mono);letter-spacing:.14em;color:var(--faint)}
 .mini{background:none;border:1px solid transparent;color:var(--faint);display:grid;place-items:center;
   width:30px;height:30px;border-radius:99px;transition:.2s}
@@ -402,7 +402,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     <div class="chat-head">
       <b>CHAT & CREATE WITH NOOR</b>
       <div class="tools">
-        <span id="msgCount">0 MSGS</span>
+        <span class="energy-pill" id="energyPill">⚡ 5 / 5 TODAY</span><span id="msgCount">0 MSGS</span>
         <button class="mini" id="clearBtn" type="button" title="Clear chat">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
@@ -478,13 +478,26 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     </div>
 
     <div class="field">
-      <label>Google Gemini API Key</label>
+      <label>AI Service</label>
+      <select id="aiModeSelect">
+        <option value="owner">🌟 Noor AI (included daily allowance)</option>
+        <option value="byok">🔑 Use my own Gemini API key</option>
+      </select>
+      <p class="settings-hint">Noor AI is the default. Your own key is optional and uses your personal Google API quota and billing.</p>
+    </div>
+    <div class="field" id="backendUrlField">
+      <label>Noor AI Server Address</label>
+      <input type="text" id="backendUrlInput" placeholder="https://your-chatternoor-server.example.com">
+      <p class="settings-hint">The owner-managed service becomes available after the backend is deployed and configured by the app publisher.</p>
+    </div>
+    <div class="field" id="byokKeyField" style="display:none">
+      <label>Your Gemini API Key (optional)</label>
       <div class="keywrap">
-        <input type="password" id="apiKeyInput" placeholder="Paste AQ... or AIza... key">
+        <input type="password" id="apiKeyInput" placeholder="Paste your own Gemini API key">
         <button type="button" class="keyeye" id="keyEye">SHOW</button>
       </div>
       <div id="keyDetectedBadge" style="font:600 10.5px var(--mono);color:#57f2a4;margin-top:6px;display:none;"></div>
-      <p style="font:500 10px/1.5 var(--mono);color:#8296ab;margin-top:7px;">API key is kept only for this browser session, not in saved app settings. Avoid using a shared device.</p>
+      <p class="settings-hint">Your key stays on this device for this session and is sent directly to Google. It is not the app owner's key. Do not use this on a shared device.</p>
     </div>
 
     <div class="field">
@@ -574,7 +587,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 const DEFAULT_SETTINGS = {
   provider: 'gemini',
   apiKey: '',
-  model: 'gemini-2.5-flash',
+  model: 'gemini-3.5-flash-lite',
+  aiMode: 'owner',
+  backendUrl: '',
   displayMode: 'auto',
   systemPrompt: "You are NOOR, an emotionally intelligent AI companion with glowing expressive eyes AND an expert HTML5 Game Creator!\n1. When the user asks for a game or app (e.g. 'Tic-Tac-Toe', 'Snake Game', 'Calculator', 'Memory Game'), generate complete self-contained executable HTML/CSS/JS code inside ```html ... ``` code blocks so it renders directly in NOOR's Fullscreen Game Screen!\n2. For regular chat, include an emotion tag at the start: [MOOD:crying], [MOOD:tirchi], [MOOD:sparkling], [MOOD:sharmati], [MOOD:love], [MOOD:happy], [MOOD:angry], or [MOOD:wink]. Speak naturally in Roman Urdu.",
   ttsEnabled: true,
@@ -606,6 +621,53 @@ try {
 
 function getApiKey() {
   return apiKeyInput.value.trim() || runtimeApiKey;
+}
+
+function updateAiModeFields() {
+  const byok = aiModeSelect.value === 'byok';
+  byokKeyField.style.display = byok ? 'block' : 'none';
+  backendUrlField.style.display = byok ? 'none' : 'block';
+}
+aiModeSelect.addEventListener('change', updateAiModeFields);
+
+function getDeviceId() {
+  let id = localStorage.getItem('NOOR_DEVICE_ID');
+  if (!id) {
+    id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'noor-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+    localStorage.setItem('NOOR_DEVICE_ID', id);
+  }
+  return id;
+}
+
+async function refreshEnergy() {
+  if (settings.aiMode === 'byok') { energyPill.textContent = '🔑 YOUR API'; return; }
+  const base = (settings.backendUrl || '').trim().replace(/\\/$/, '');
+  if (!base) { energyPill.textContent = '⚡ SERVER SETUP'; return; }
+  try {
+    const r = await fetch(base + '/api/status', { headers: { 'X-Device-Id': getDeviceId() } });
+    if (!r.ok) throw new Error('status unavailable');
+    const d = await r.json();
+    energyPill.textContent = '⚡ ' + d.remaining + ' / 5 TODAY';
+  } catch (e) { energyPill.textContent = '⚡ OFFLINE'; }
+}
+
+async function callNoorAI(userText, model, systemPrompt) {
+  if (settings.aiMode === 'byok') {
+    const key = getApiKey();
+    if (!key) throw new Error('Settings mein apni Gemini API Key enter karein.');
+    return callGeminiNativeAPI(key, model, systemPrompt, userText);
+  }
+  const base = (settings.backendUrl || '').trim().replace(/\\/$/, '');
+  if (!base) throw new Error('Noor AI server abhi configure nahi hua. Grown-up Settings mein server address add karein, ya apni Gemini API Key ka option select karein.');
+  const historyContext = messageHistory.slice(-6).map(m => (m.role === 'user' ? 'User' : 'NOOR') + ': ' + m.content).join('\\n');
+  const response = await fetch(base + '/api/chat', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Device-Id': getDeviceId() },
+    body: JSON.stringify({ message: userText, history: historyContext, systemPrompt, model: 'gemini-3.5-flash-lite' })
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || 'Noor AI server error (' + response.status + ')');
+  energyPill.textContent = '⚡ ' + data.remaining + ' / 5 TODAY';
+  return data.reply;
 }
 
 function saveSettings() {
@@ -655,6 +717,11 @@ const voiceBanner = document.getElementById('voiceBanner');
 
 const providerSelect = document.getElementById('providerSelect');
 const apiKeyInput = document.getElementById('apiKeyInput');
+const aiModeSelect = document.getElementById('aiModeSelect');
+const backendUrlInput = document.getElementById('backendUrlInput');
+const backendUrlField = document.getElementById('backendUrlField');
+const byokKeyField = document.getElementById('byokKeyField');
+const energyPill = document.getElementById('energyPill');
 const modelSelect = document.getElementById('modelSelect');
 const customModelInput = document.getElementById('customModelInput');
 const discoverModelsBtn = document.getElementById('discoverModelsBtn');
@@ -1461,21 +1528,17 @@ async function sendMessage() {
   
   isThinking = true; sendBtn.disabled = true; showTypingDots();
 
-  const key = getApiKey();
-  const model = getSelectedModel() || settings.model || 'gemini-2.5-flash';
+  const model = settings.aiMode === 'byok' ? (getSelectedModel() || settings.model || 'gemini-3.5-flash-lite') : 'gemini-3.5-flash-lite';
   const sysPrompt = sysPromptInput.value.trim() || settings.systemPrompt;
 
-  if (!key) {
+  if (settings.aiMode === 'byok' && !getApiKey()) {
     removeTypingDots(); playChime('error'); setMood('error');
-    addMessage('ai', '⚠️ Pehle Settings (⚙️) mein ja kar apni Google Gemini API Key paste karein!', true);
-    showToast('⚠️ Gemini API Key missing! Add key in settings.', 'bad');
-    isThinking = false; sendBtn.disabled = false;
-    speakText("Pehle settings mein ja kar apni Gemini API key enter karein!");
-    return;
+    addMessage('ai', '⚠️ Grown-up Settings mein apni Gemini API Key add karein.', true);
+    isThinking = false; sendBtn.disabled = false; return;
   }
 
   try {
-    const rawReply = await callGeminiNativeAPI(key, model, sysPrompt, text);
+    const rawReply = await callNoorAI(text, model, sysPrompt);
 
     // 1. CHECK IF GEMINI GENERATED A GAME OR HTML APP CODE
     const htmlCode = extractHtmlCode(rawReply);
@@ -1533,7 +1596,10 @@ sendBtn.addEventListener('click', sendMessage);
 function openDrawer() {
   displayModeSelect.value = settings.displayMode || 'auto';
   providerSelect.value = settings.provider || 'gemini';
+  aiModeSelect.value = settings.aiMode || 'owner';
+  backendUrlInput.value = settings.backendUrl || '';
   apiKeyInput.value = runtimeApiKey || '';
+  updateAiModeFields();
   inputLanguageSelect.value = settings.inputLanguage || 'ur-PK';
   voiceLanguageSelect.value = settings.voiceLanguage || 'ur';
   rememberChatsToggle.checked = !!settings.rememberChats;
@@ -1570,7 +1636,9 @@ displayModeSelect.addEventListener('change', (e) => {
 saveBtn.addEventListener('click', () => {
   settings.displayMode = displayModeSelect.value;
   settings.provider = providerSelect.value;
-  runtimeApiKey = apiKeyInput.value.trim();
+  settings.aiMode = aiModeSelect.value;
+  settings.backendUrl = backendUrlInput.value.trim();
+  runtimeApiKey = settings.aiMode === 'byok' ? apiKeyInput.value.trim() : '';
   settings.model = getSelectedModel();
   settings.systemPrompt = sysPromptInput.value.trim();
   settings.ttsVoice = voiceSelect.value;
@@ -1584,7 +1652,7 @@ saveBtn.addEventListener('click', () => {
   if (settings.displayMode === 'eyes') switchScreenMode('eyes');
   else if (settings.displayMode === 'game') switchScreenMode('game');
 
-  saveSettings(); persistConversation(); initVoices(); closeDrawerFn(); playChime('boot');
+  saveSettings(); persistConversation(); initVoices(); refreshEnergy(); closeDrawerFn(); playChime('boot');
   showToast(`✅ Settings Saved! Model: ${settings.model}`, 'ok');
 });
 
@@ -1592,6 +1660,7 @@ testBtn.addEventListener('click', async () => {
   const key = getApiKey();
   const model = getSelectedModel();
 
+  if (settings.aiMode !== 'byok') { showToast('Noor AI server status is checked when you send a message.', 'ok'); return; }
   if (!key) {
     showToast('⚠️ Please enter your Gemini API key first!', 'bad');
     return;
@@ -1631,6 +1700,8 @@ testVoiceBtn.addEventListener('click', () => {
   speakText("Suno! Fullscreen HTML Game mode aur escape options ready hain!");
   showToast('🔊 Voice & Fullscreen Game Mode Active!', 'ok');
 });
+
+refreshEnergy();
 
 function showToast(msg, type = 'ok') {
   toastEl.textContent = msg; toastEl.className = `toast show ${type}`;
