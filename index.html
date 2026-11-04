@@ -1525,6 +1525,21 @@ function showToast(msg, type = 'ok') {
   toastEl.textContent = msg; toastEl.className = `toast show ${type}`;
   setTimeout(() => { toastEl.className = 'toast'; }, 3200);
 }
+
+// SETTINGS CLICK RECOVERY: capture taps even if another UI layer interferes.
+document.addEventListener('click', function(event) {
+  const target = event.target && event.target.closest ? event.target.closest('#setBtn') : null;
+  if (!target) return;
+  event.preventDefault();
+  event.stopPropagation();
+  try {
+    if (typeof openDrawer === 'function') openDrawer();
+    else document.body.classList.add('open');
+  } catch (error) {
+    document.body.classList.add('open');
+    console.error('Settings drawer recovery:', error);
+  }
+}, true);
 </script>
 </body>
 </html>
