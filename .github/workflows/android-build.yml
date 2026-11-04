@@ -27,6 +27,9 @@ jobs:
       - name: Install SDK packages
         run: sdkmanager "platforms;android-34" "build-tools;34.0.0"
 
+      - name: Add Android build-tools to PATH
+        run: echo "$ANDROID_HOME/build-tools/34.0.0" >> "$GITHUB_PATH"
+
       - name: Create debug signing key
         run: |
           mkdir -p "$HOME/.android"
