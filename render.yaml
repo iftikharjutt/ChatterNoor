@@ -1,14 +1,15 @@
 databases:
   - name: chatternoor-db
     plan: free
-    databaseName: chatternoor
-    user: chatternoor
+    databaseName: chatternoor_db
+    user: chatternoor_db_user
 
 services:
   - type: web
     name: chatternoor-ai
     runtime: node
     plan: free
+    region: singapore
     rootDir: server
     buildCommand: npm install
     startCommand: npm start
