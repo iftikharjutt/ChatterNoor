@@ -641,7 +641,7 @@ function getDeviceId() {
 
 async function refreshEnergy() {
   if (settings.aiMode === 'byok') { energyPill.textContent = '🔑 YOUR API'; return; }
-  const base = (settings.backendUrl || '').trim().replace(/\\/$/, '');
+  const base = (settings.backendUrl || '').trim().replace(/\/$/, '');
   if (!base) { energyPill.textContent = '⚡ SERVER SETUP'; return; }
   try {
     const r = await fetch(base + '/api/status', { headers: { 'X-Device-Id': getDeviceId() } });
