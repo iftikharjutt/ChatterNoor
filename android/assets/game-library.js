@@ -42,7 +42,7 @@
   $('saveGameBtn')?.addEventListener('click',saveCurrent);
   $('gameShelfToggle')?.addEventListener('click',()=> $('gameShelfWrap')?.classList.toggle('expanded'));
   $('openLibraryBtn')?.addEventListener('click',()=>{ $('drawer')?.classList.add('open'); $('scrim')?.classList.add('show'); });
-  window.addEventListener('noor-game-ready',()=>{ const b=$('saveGameBtn'); if(b)b.hidden=false; });
+  window.addEventListener('noor-game-ready',()=>{\n    const b=$('saveGameBtn'); if(b)b.hidden=false;\n    const code=window.currentHtmlCode; if(!code)return;\n    library.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),title:'Recent game · '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),html:code,savedAt:Date.now(),recent:true});\n    library=library.slice(0,LIMIT); persist();\n  });
   render();
   window.NoorGameLibrary={render,saveCurrent,play};
 })();
