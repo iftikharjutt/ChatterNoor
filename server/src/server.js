@@ -8,7 +8,7 @@ const app = express();
 const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: process.env.PGSSL === 'false' ? false : { rejectUnauthorized: false } });
 const PORT = Number(process.env.PORT || 8080);
 const DAILY_USER_LIMIT = Math.max(1, Number(process.env.DAILY_USER_LIMIT || 5));
-const DAILY_GLOBAL_LIMIT = Math.max(1, Number(process.env.DAILY_GLOBAL_LIMIT || 500));
+const DAILY_GLOBAL_LIMIT = Math.max(1, Number(process.env.DAILY_GLOBAL_LIMIT || 400));
 const GEMINI_MODEL = 'gemini-3.5-flash-lite';
 
 app.disable('x-powered-by');
