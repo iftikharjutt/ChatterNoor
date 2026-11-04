@@ -657,7 +657,7 @@ async function callNoorAI(userText, model, systemPrompt) {
     if (!key) throw new Error('Settings mein apni Gemini API Key enter karein.');
     return callGeminiNativeAPI(key, model, systemPrompt, userText);
   }
-  const base = (settings.backendUrl || '').trim().replace(/\\/$/, '');
+  const base = (settings.backendUrl || '').trim().replace(/\/$/, '');
   if (!base) throw new Error('Noor AI server abhi configure nahi hua. Grown-up Settings mein server address add karein, ya apni Gemini API Key ka option select karein.');
   const historyContext = messageHistory.slice(-6).map(m => (m.role === 'user' ? 'User' : 'NOOR') + ': ' + m.content).join('\\n');
   const response = await fetch(base + '/api/chat', {
