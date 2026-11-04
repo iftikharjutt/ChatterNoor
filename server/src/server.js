@@ -12,7 +12,7 @@ const DAILY_GLOBAL_LIMIT = Math.max(1, Number(process.env.DAILY_GLOBAL_LIMIT || 
 const GEMINI_MODEL = 'gemini-3.5-flash-lite';
 
 app.disable('x-powered-by');
-app.use(cors({ origin: (process.env.ALLOWED_ORIGINS || '').split(',').map(x => x.trim()).filter(Boolean), allowedHeaders: ['Content-Type', 'X-Device-Id'] }));
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map(x => x.trim()).filter(Boolean);\napp.use(cors({ origin: (origin, callback) => { if (!origin || origin === 'null' || allowedOrigins.includes(origin)) return callback(null, true); return callback(new Error('Origin not allowed')); }, allowedHeaders: ['Content-Type', 'X-Device-Id'] }));
 app.use(express.json({ limit: '16kb' }));
 app.use('/api/', rateLimit({ windowMs: 60 * 1000, limit: 20, standardHeaders: 'draft-7', legacyHeaders: false }));
 
