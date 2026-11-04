@@ -12,7 +12,8 @@ const DAILY_GLOBAL_LIMIT = Math.max(1, Number(process.env.DAILY_GLOBAL_LIMIT || 
 const GEMINI_MODEL = 'gemini-3.5-flash-lite';
 
 app.disable('x-powered-by');
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map(x => x.trim()).filter(Boolean);\napp.use(cors({ origin: (origin, callback) => { if (!origin || origin === 'null' || allowedOrigins.includes(origin)) return callback(null, true); return callback(new Error('Origin not allowed')); }, allowedHeaders: ['Content-Type', 'X-Device-Id'] }));
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map(x => x.trim()).filter(Boolean);
+app.use(cors({ origin: (origin, callback) => { if (!origin || origin === 'null' || allowedOrigins.includes(origin)) return callback(null, true); return callback(new Error('Origin not allowed')); }, allowedHeaders: ['Content-Type', 'X-Device-Id'] }));
 app.use(express.json({ limit: '16kb' }));
 app.use('/api/', rateLimit({ windowMs: 60 * 1000, limit: 20, standardHeaders: 'draft-7', legacyHeaders: false }));
 
@@ -67,7 +68,6 @@ app.post('/api/chat', async (req, res) => {
   if (!id) return res.status(400).json({ error: 'A valid app device ID is required.' });
   const message = typeof req.body.message === 'string' ? req.body.message.trim() : '';
   const history = typeof req.body.history === 'string' ? req.body.history.slice(-6000) : '';
-  const systemPrompt = typeof req.body.systemPrompt === 'string' ? req.body.systemPrompt.slice(0, 3000) : 'You are Noor, a friendly child-safe AI companion. Reply warmly and age-appropriately.';
   if (!message || message.length > 2000) return res.status(400).json({ error: 'Message must be between 1 and 2000 characters.' });
   if (!process.env.GEMINI_API_KEY) return res.status(503).json({ error: 'Noor AI is not configured by the app publisher yet.' });
 
@@ -96,11 +96,11 @@ app.post('/api/chat', async (req, res) => {
     await client.query('COMMIT');
     reserved = true;
 
-    const prompt = 'System Instructions:\n' + systemPrompt + '\n\nRecent Chat:\n' + history + '\n\nUser Question:\n' + message;
+    const prompt = 'Recent Chat:\\n' + history + '\\n\\nUser Question:\\n' + message;
     const upstream = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':generateContent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 700, temperature: 0.8 } })
+      body: JSON.stringify({ systemInstruction: { parts: [{ text: 'You are Noor, a friendly, child-safe educational companion. Use age-appropriate language. Never ask children for passwords, precise location, contact details, photos, or private information. Do not provide sexual, violent, dangerous, hateful, or self-harm instructions. Encourage a trusted adult for serious, unsafe, or upsetting situations. Keep replies kind, brief, and suitable for children.' }] }, contents: [{ parts: [{ text: prompt }] }], safetySettings: [{ category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' }, { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' }, { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' }, { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' }], generationConfig: { maxOutputTokens: 700, temperature: 0.8 } })
     });
     const payload = await upstream.json().catch(() => ({}));
     if (!upstream.ok) {
