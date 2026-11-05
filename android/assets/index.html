@@ -1244,13 +1244,15 @@ function parseMoodFromResponse(text) {
 // AUTOMATIC GAME / HTML CODE EXTRACTOR
 function extractHtmlCode(text) {
   if (!text) return null;
-  const codeBlockMatch = text.match(/```html([\s\S]*?)```/i);
-  if (codeBlockMatch && codeBlockMatch[1]) {
-    return codeBlockMatch[1].trim();
+  const source = String(text).trim();
+  const fencedBlocks = [...source.matchAll(/```(?:html|htm)?\s*([\s\S]*?)```/gi)];
+  for (const block of fencedBlocks) {
+    const code = (block[1] || '').trim();
+    if (/<html[\s>]/i.test(code) || /<!doctype\s+html/i.test(code)) return code;
   }
-  if (text.includes('<!DOCTYPE html>') || (text.includes('<html') && text.includes('</html>'))) {
-    return text.trim();
-  }
+  const start = source.search(/<!doctype\s+html|<html[\s>]/i);
+  const finish = source.toLowerCase().lastIndexOf('</html>');
+  if (start >= 0 && finish > start) return source.slice(start, finish + 7).trim();
   return null;
 }
 
