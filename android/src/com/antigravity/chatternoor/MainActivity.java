@@ -103,8 +103,6 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        applyImmersiveMode();
-
         webView = new WebView(this);
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
@@ -124,9 +122,9 @@ public class MainActivity extends Activity {
 
         webView.setWebChromeClient(new NoorChromeClient());
         webView.setWebViewClient(new LocalOnlyWebViewClient());
-        webView.loadUrl(START_URL);
         setContentView(webView);
-        applyImmersiveMode();
+        getWindow().getDecorView().post(this::applyImmersiveMode);
+        webView.loadUrl(START_URL);
     }
 
     @Override
