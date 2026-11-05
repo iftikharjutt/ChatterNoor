@@ -24,6 +24,22 @@ function deviceId(req) {
 }
 function todayUtc() { return new Date().toISOString().slice(0, 10); }
 
+async function refundReservation(id, date = todayUtc()) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [date]);
+    await client.query('UPDATE noor_daily_usage SET request_count=GREATEST(0, request_count-1) WHERE usage_date=$1 AND device_id=$2', [date, id]);
+    await client.query('UPDATE noor_global_usage SET request_count=GREATEST(0, request_count-1) WHERE usage_date=$1', [date]);
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 async function initDb() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS noor_daily_usage (
@@ -45,6 +61,7 @@ async function usageFor(id) {
   return result.rows[0] ? Number(result.rows[0].request_count) : 0;
 }
 
+app.get('/', (_req, res) => res.status(200).type('html').send(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ChatterNoor AI</title><style>body{font:16px system-ui;background:#080d14;color:#e5f4ff;display:grid;place-items:center;min-height:90vh;margin:0}.card{padding:28px;border:1px solid #284052;border-radius:18px;background:#101a26;max-width:520px}h1{color:#59e0ff}code{color:#8fffc1}</style></head><body><main class="card"><h1>NOOR AI SERVER</h1><p>ChatterNoor backend is running.</p><p>Health: <code>/health</code></p><p>API status: <code>/api/status</code> (requires app device ID)</p></main></body></html>`));
 app.get('/health', (_req, res) => res.json({ ok: true, service: 'ChatterNoor AI' }));
 
 app.get('/api/status', async (req, res) => {
@@ -71,11 +88,13 @@ app.post('/api/chat', async (req, res) => {
   if (!message || message.length > 2000) return res.status(400).json({ error: 'Message must be between 1 and 2000 characters.' });
   if (!process.env.GEMINI_API_KEY) return res.status(503).json({ error: 'Noor AI is not configured by the app publisher yet.' });
 
-  const client = await pool.connect();
+  let client;
   let reserved = false;
+  let reservationDate = todayUtc();
   try {
+    client = await pool.connect();
     await client.query('BEGIN');
-    const date = todayUtc();
+    const date = reservationDate;
     await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [date]);
     const user = await client.query('SELECT request_count FROM noor_daily_usage WHERE usage_date=$1 AND device_id=$2 FOR UPDATE', [date, id]);
     const global = await client.query('SELECT request_count FROM noor_global_usage WHERE usage_date=$1 FOR UPDATE', [date]);
@@ -106,18 +125,28 @@ app.post('/api/chat', async (req, res) => {
     });
     const payload = await upstream.json().catch(() => ({}));
     if (!upstream.ok) {
-      console.error('Gemini upstream error:', upstream.status, payload.error && payload.error.status);
-      return res.status(upstream.status === 429 ? 503 : 502).json({ error: 'Noor AI is busy right now. Please try again shortly.', remaining: Math.max(0, DAILY_USER_LIMIT - userCount - 1) });
+      console.error('Gemini upstream error:', upstream.status, payload.error && payload.error.status, payload.error && payload.error.message);
+      await refundReservation(id, reservationDate);
+      reserved = false;
+      return res.status(upstream.status === 429 ? 503 : 502).json({ error: 'Noor AI is busy right now. Please try again shortly. Your free message has not been used.', remaining: Math.max(0, DAILY_USER_LIMIT - userCount) });
     }
     const reply = payload.candidates && payload.candidates[0] && payload.candidates[0].content && payload.candidates[0].content.parts && payload.candidates[0].content.parts.map(p => p.text || '').join('');
-    if (!reply) return res.status(502).json({ error: 'Noor AI returned an empty reply.' });
+    if (!reply) {
+      await refundReservation(id, reservationDate);
+      reserved = false;
+      return res.status(502).json({ error: 'Noor AI returned an empty reply. Your free message has not been used.', remaining: Math.max(0, DAILY_USER_LIMIT - userCount) });
+    }
     res.json({ reply, used: userCount + 1, remaining: Math.max(0, DAILY_USER_LIMIT - userCount - 1) });
   } catch (err) {
-    if (!reserved) await client.query('ROLLBACK').catch(() => {});
+    if (client && !reserved) await client.query('ROLLBACK').catch(() => {});
+    if (reserved) {
+      try { await refundReservation(id, reservationDate); reserved = false; }
+      catch (refundErr) { console.error('usage refund failed:', refundErr.message); }
+    }
     console.error('chat request failed:', err.message);
-    res.status(503).json({ error: 'Noor AI service temporarily unavailable.' });
+    if (!res.headersSent) res.status(503).json({ error: 'Noor AI service temporarily unavailable. Please try again; failed requests are not meant to use a free message.' });
   } finally {
-    client.release();
+    if (client) client.release();
   }
 });
 
