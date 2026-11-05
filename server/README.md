@@ -5,7 +5,7 @@ This is the owner-managed Gemini proxy. The app sends messages to this server; t
 ## Deploy
 1. Create a PostgreSQL database and a Node.js 20+ service.
 2. Deploy this folder as the service root (or configure the host to use `server/`).
-3. Set `DATABASE_URL`, `GEMINI_API_KEY`, `DAILY_USER_LIMIT=5`, `DAILY_GLOBAL_LIMIT=500`, and `ALLOWED_ORIGINS` in the host's secret/environment settings.
+3. Set `DATABASE_URL`, `GEMINI_API_KEY`, `DAILY_USER_LIMIT=5`, `DAILY_GLOBAL_LIMIT=400`, and `ALLOWED_ORIGINS` in the host's secret/environment settings.
 4. Set the app's Noor AI Server Address in Grown-up Settings to the deployed HTTPS origin.
 5. Check `/health` and `/api/status`.
 
