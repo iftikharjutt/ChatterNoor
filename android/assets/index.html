@@ -356,7 +356,30 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .games-drawer-body .game-empty{padding:18px;text-align:center;line-height:1.6}
 .games-scrim{position:fixed;inset:0;z-index:30;background:#02050ac4;opacity:0;pointer-events:none;transition:opacity .25s}
 .games-scrim.open{opacity:1;pointer-events:auto}
-.watch-ad-btn{border:1px solid #e9b65e;background:#3b2c16;color:#ffd58a;border-radius:99px;padding:7px 10px;font:700 9px var(--mono);white-space:nowrap}.watch-ad-btn[hidden]{display:none} .games-drawer{position:fixed;top:0;right:0;bottom:0;width:min(390px,92vw);z-index:31;background:#0b1017;border-left:1px solid var(--line2);box-shadow:-20px 0 60px #0008;transform:translateX(105%);transition:transform .32s ease;display:flex;flex-direction:column}.games-drawer.open{transform:translateX(0)}.games-drawer-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--line)}.games-drawer-head strong{font:700 13px var(--disp);color:var(--cyan)}.games-drawer-body{padding:16px;overflow:auto;flex:1}.games-drawer-body #savedGamesList{display:flex;flex-direction:column;gap:9px}.games-drawer-body .game-card{flex:0 0 auto;width:100%}.games-scrim{position:fixed;inset:0;z-index:30;background:#02050ac4;opacity:0;pointer-events:none;transition:opacity .25s}.games-scrim.open{opacity:1;pointer-events:auto}\n</style>
+.watch-ad-btn{border:1px solid #e9b65e;background:#3b2c16;color:#ffd58a;border-radius:99px;padding:7px 10px;font:700 9px var(--mono);white-space:nowrap}.watch-ad-btn[hidden]{display:none} .games-drawer{position:fixed;top:0;right:0;bottom:0;width:min(390px,92vw);z-index:31;background:#0b1017;border-left:1px solid var(--line2);box-shadow:-20px 0 60px #0008;transform:translateX(105%);transition:transform .32s ease;display:flex;flex-direction:column}.games-drawer.open{transform:translateX(0)}.games-drawer-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--line)}.games-drawer-head strong{font:700 13px var(--disp);color:var(--cyan)}.games-drawer-body{padding:16px;overflow:auto;flex:1}.games-drawer-body #savedGamesList{display:flex;flex-direction:column;gap:9px}.games-drawer-body .game-card{flex:0 0 auto;width:100%}.games-scrim{position:fixed;inset:0;z-index:30;background:#02050ac4;opacity:0;pointer-events:none;transition:opacity .25s}.games-scrim.open{opacity:1;pointer-events:auto}\n
+/* Mobile polish: compact Noor display, give the conversation the available height. */
+@media(max-width:960px){
+  main{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(132px,18vh) minmax(0,1fr);gap:8px;padding:8px}
+  .face-wrap{min-height:0;gap:5px}
+  .face-screen{height:100%;min-height:132px;max-height:210px;flex:1;border-radius:18px}
+  .face-foot{min-height:12px;font-size:8px}
+  .top-controls{left:7px;right:7px;top:7px;justify-content:center;gap:5px;flex-wrap:nowrap}
+  .top-controls button{min-width:0;min-height:34px;padding:6px 7px;font-size:clamp(7px,2.1vw,9px);letter-spacing:.02em;white-space:nowrap}
+  .chat-panel{min-height:0;border-radius:18px}
+  .chat{min-height:0;padding:11px;gap:10px}
+  .inputbar{padding:8px;gap:8px}
+  .inputbar textarea,.inputbar input,#input{min-height:52px;max-height:96px;padding:11px 13px;font-size:15px;line-height:1.4}
+  .mic-btn,.send{width:46px;min-width:46px;height:46px;min-height:46px;border-radius:13px}
+  .game-shelf-wrap{display:none!important}
+}
+@media(max-width:380px){
+  .top-controls{gap:4px}
+  .top-controls button{padding:5px 5px;font-size:7px}
+  .chat-head{padding:10px}
+  .chat-head b{font-size:10px}
+  #msgCount{font-size:8px}
+}
+</style>
 </head>
 <body>
 <div class="ambient"></div>
