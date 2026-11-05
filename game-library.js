@@ -42,7 +42,7 @@
   $('kidPromptChips')?.addEventListener('click',e=>{const b=e.target.closest('[data-prompt]');if(!b)return;const input=$('input');input.value=b.dataset.prompt;input.focus();});
   $('saveGameBtn')?.addEventListener('click',saveCurrent);
   $('gameShelfToggle')?.addEventListener('click',()=> $('gameShelfWrap')?.classList.toggle('expanded'));
-  $('openLibraryBtn')?.addEventListener('click',()=>{ $('drawer')?.classList.add('open'); $('scrim')?.classList.add('show'); });
+  // Dedicated saved-games drawer is controlled by index.html.
   window.addEventListener('noor-game-ready',()=>{
     const b=$('saveGameBtn'); if(b)b.hidden=false;
     const code=window.currentHtmlCode; if(!code)return;
