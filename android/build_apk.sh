@@ -12,7 +12,7 @@ fi
 
 ANDROID_SDK="${ANDROID_SDK:-$HOME/android-sdk}"
 ANDROID_JAR="${ANDROID_JAR:-$ANDROID_SDK/platforms/android-34/android.jar}"
-D8_BIN="${D8_BIN:-$ANDROID_SDK/build-tools/34.0.0/d8}"
+D8_BIN="${D8_BIN:-$ANDROID_SDK/build-tools/36.0.0/d8}"
 KEYSTORE="${KEYSTORE:-$HOME/.android/debug.keystore}"
 
 mkdir -p gen bin
