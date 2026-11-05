@@ -10,10 +10,14 @@
   function render() {
     const shelf=$('gameShelf'), list=$('savedGamesList'), count=$('gameShelfCount');
     if (!shelf || !list) return;
-    count.textContent=library.length;
+    if (count) count.textContent=library.length;
     const cards=library.map(g=>'<article class="game-card"><div class="game-card-title">'+esc(g.title)+'</div><small>'+new Date(g.savedAt).toLocaleDateString()+'</small><div class="game-card-actions"><button data-play="'+g.id+'">▶ Play</button><button class="secondary" data-delete="'+g.id+'">✕</button></div></article>').join('');
     shelf.innerHTML=cards || '<div class="game-empty">No saved games yet. Create a game, then tap “Save game”.</div>';
     list.innerHTML=cards || '<p class="game-empty">Your saved games will appear here.</p>';
+  }
+  function openLibrary() {
+    $('gamesDrawer')?.classList.add('open');
+    $('gamesScrim')?.classList.add('open');
   }
   function saveCurrent() {
     const code=window.currentHtmlCode;
@@ -28,6 +32,7 @@
     window.currentHtmlCode=game.html;
     const frame=$('gameFrame'); if(frame) frame.srcdoc=game.html;
     if(typeof window.switchScreenMode==='function') window.switchScreenMode('game');
+    $('gamesDrawer')?.classList.remove('open'); $('gamesScrim')?.classList.remove('open');
     window.showToast?.('Loaded '+game.title,'ok');
   }
   function remove(id) {
@@ -41,8 +46,8 @@
   });
   $('kidPromptChips')?.addEventListener('click',e=>{const b=e.target.closest('[data-prompt]');if(!b)return;const input=$('input');input.value=b.dataset.prompt;input.focus();});
   $('saveGameBtn')?.addEventListener('click',saveCurrent);
-  $('gameShelfToggle')?.addEventListener('click',()=> $('gameShelfWrap')?.classList.toggle('expanded'));
-  // Dedicated saved-games drawer is controlled by index.html.
+  $('gameShelfToggle')?.addEventListener('click',openLibrary);
+  $('openLibraryBtn')?.addEventListener('click',openLibrary);
   window.addEventListener('noor-game-ready',()=>{
     const b=$('saveGameBtn'); if(b)b.hidden=false;
     const code=window.currentHtmlCode; if(!code)return;
@@ -50,5 +55,5 @@
     library=library.slice(0,LIMIT); persist();
   });
   render();
-  window.NoorGameLibrary={render,saveCurrent,play};
+  window.NoorGameLibrary={render,saveCurrent,play,openLibrary};
 })();
