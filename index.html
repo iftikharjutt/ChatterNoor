@@ -356,7 +356,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .games-drawer-body .game-empty{padding:18px;text-align:center;line-height:1.6}
 .games-scrim{position:fixed;inset:0;z-index:30;background:#02050ac4;opacity:0;pointer-events:none;transition:opacity .25s}
 .games-scrim.open{opacity:1;pointer-events:auto}
-.watch-ad-btn{border:1px solid #e9b65e;background:#3b2c16;color:#ffd58a;border-radius:99px;padding:7px 10px;font:700 9px var(--mono);white-space:nowrap}.watch-ad-btn[hidden]{display:none}</style>
+.watch-ad-btn{border:1px solid #e9b65e;background:#3b2c16;color:#ffd58a;border-radius:99px;padding:7px 10px;font:700 9px var(--mono);white-space:nowrap}.watch-ad-btn[hidden]{display:none} .games-drawer{position:fixed;top:0;right:0;bottom:0;width:min(390px,92vw);z-index:31;background:#0b1017;border-left:1px solid var(--line2);box-shadow:-20px 0 60px #0008;transform:translateX(105%);transition:transform .32s ease;display:flex;flex-direction:column}.games-drawer.open{transform:translateX(0)}.games-drawer-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--line)}.games-drawer-head strong{font:700 13px var(--disp);color:var(--cyan)}.games-drawer-body{padding:16px;overflow:auto;flex:1}.games-drawer-body #savedGamesList{display:flex;flex-direction:column;gap:9px}.games-drawer-body .game-card{flex:0 0 auto;width:100%}.games-scrim{position:fixed;inset:0;z-index:30;background:#02050ac4;opacity:0;pointer-events:none;transition:opacity .25s}.games-scrim.open{opacity:1;pointer-events:auto}\n</style>
 </head>
 <body>
 <div class="ambient"></div>
@@ -511,7 +511,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     </div>
     <div class="field" id="backendUrlField">
       <label>Noor AI Server Address</label>
-      <input type="text" id="backendUrlInput" placeholder="https://your-chatternoor-server.example.com">
+      <input type="text" id="backendUrlInput" placeholder="https://chatternoor-ai.onrender.com">
       <p class="settings-hint">The owner-managed service becomes available after the backend is deployed and configured by the app publisher.</p>
     </div>
     <div class="field" id="byokKeyField" style="display:none">
@@ -613,7 +613,7 @@ const DEFAULT_SETTINGS = {
   apiKey: '',
   model: 'gemini-3.5-flash-lite',
   aiMode: 'owner',
-  backendUrl: '',
+  backendUrl: 'https://chatternoor-ai.onrender.com',
   displayMode: 'auto',
   systemPrompt: "You are NOOR, an emotionally intelligent AI companion with glowing expressive eyes AND an expert HTML5 Game Creator!\n1. When the user asks for a game or app (e.g. 'Tic-Tac-Toe', 'Snake Game', 'Calculator', 'Memory Game'), generate complete self-contained executable HTML/CSS/JS code inside ```html ... ``` code blocks so it renders directly in NOOR's Fullscreen Game Screen!\n2. For regular chat, include an emotion tag at the start: [MOOD:crying], [MOOD:tirchi], [MOOD:sparkling], [MOOD:sharmati], [MOOD:love], [MOOD:happy], [MOOD:angry], or [MOOD:wink]. Speak naturally in Roman Urdu.",
   ttsEnabled: true,
@@ -1626,7 +1626,7 @@ function openDrawer() {
   displayModeSelect.value = settings.displayMode || 'auto';
   providerSelect.value = settings.provider || 'gemini';
   aiModeSelect.value = settings.aiMode || 'owner';
-  backendUrlInput.value = settings.backendUrl || '';
+  backendUrlInput.value = settings.backendUrl || 'https://chatternoor-ai.onrender.com';
   apiKeyInput.value = runtimeApiKey || '';
   updateAiModeFields();
   inputLanguageSelect.value = settings.inputLanguage || 'ur-PK';
@@ -1666,7 +1666,7 @@ saveBtn.addEventListener('click', () => {
   settings.displayMode = displayModeSelect.value;
   settings.provider = providerSelect.value;
   settings.aiMode = aiModeSelect.value;
-  settings.backendUrl = backendUrlInput.value.trim();
+  settings.backendUrl = backendUrlInput.value.trim() || 'https://chatternoor-ai.onrender.com';
   runtimeApiKey = settings.aiMode === 'byok' ? apiKeyInput.value.trim() : '';
   settings.model = getSelectedModel();
   settings.systemPrompt = sysPromptInput.value.trim();
