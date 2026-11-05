@@ -115,11 +115,11 @@ app.post('/api/chat', async (req, res) => {
     const globalCount = global.rows[0] ? Number(global.rows[0].request_count) : 0;
     if (userCount >= DAILY_USER_LIMIT) {
       await client.query('ROLLBACK');
-      return res.status(429).json({ error: 'Aaj ke 5 free messages complete ho gaye. Kal Noor se dobara baat karna!', remaining: 0 });
+      return res.status(429).json({ error: `Aaj ke ${DAILY_USER_LIMIT} free messages complete ho gaye. Kal Noor se dobara baat karna!`, remaining: 0, dailyLimit: DAILY_USER_LIMIT });
     }
     if (globalCount >= DAILY_GLOBAL_LIMIT) {
       await client.query('ROLLBACK');
-      return res.status(429).json({ error: 'Noor ka daily free quota aaj ke liye complete ho gaya. Kal dobara try karein.', remaining: Math.max(0, DAILY_USER_LIMIT - userCount) });
+      return res.status(429).json({ error: 'Noor ka daily free quota aaj ke liye complete ho gaya. Kal dobara try karein.', remaining: Math.max(0, DAILY_USER_LIMIT - userCount), dailyLimit: DAILY_USER_LIMIT });
     }
     await client.query(`INSERT INTO noor_daily_usage(usage_date,device_id,request_count) VALUES($1,$2,1)
       ON CONFLICT(usage_date,device_id) DO UPDATE SET request_count=noor_daily_usage.request_count+1`, [date, id]);
@@ -150,7 +150,7 @@ app.post('/api/chat', async (req, res) => {
       return res.status(502).json({ error: 'Noor AI returned an empty reply.', remaining: Math.max(0, DAILY_USER_LIMIT - userCount) });
     }
     reserved = false;
-    res.json({ reply, used: userCount + 1, remaining: Math.max(0, DAILY_USER_LIMIT - userCount - 1) });
+    res.json({ reply, used: userCount + 1, remaining: Math.max(0, DAILY_USER_LIMIT - userCount - 1), dailyLimit: DAILY_USER_LIMIT });
   } catch (err) {
     if (!reserved) await client.query('ROLLBACK').catch(() => {});
     else {
