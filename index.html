@@ -332,6 +332,30 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 }
 @media(prefers-reduced-motion:reduce){.prompt-chips button{transition:none}}
 
+
+/* UI refinement: give conversation the stage, keep Noor's eyes compact */
+@media(min-width:961px){
+  main{grid-template-columns:minmax(260px,.78fr) minmax(0,1.22fr);gap:14px;padding:14px 18px}
+  .face-screen{min-height:220px}
+  .inputbar textarea{min-height:64px;max-height:150px;padding:16px;font-size:16px}
+}
+@media(max-width:960px){
+  main{grid-template-columns:1fr;grid-template-rows:minmax(150px,25vh) minmax(0,1fr);gap:9px;padding:9px}
+  .face-screen{height:100%;min-height:150px;flex:1}
+  .face-foot{font-size:9px}
+  .inputbar textarea{min-height:58px;max-height:130px}
+}
+.games-drawer{position:fixed;top:0;right:0;bottom:0;width:min(390px,92vw);z-index:31;background:#0b1017;border-left:1px solid var(--line2);box-shadow:-20px 0 60px #0008;transform:translateX(105%);transition:transform .32s ease;display:flex;flex-direction:column}
+.games-drawer.open{transform:translateX(0)}
+.games-drawer-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--line)}
+.games-drawer-head strong{font:700 13px var(--disp);letter-spacing:.12em;color:var(--cyan)}
+.games-drawer-body{padding:16px;overflow:auto;flex:1}
+.games-drawer-body #savedGamesList{display:flex;flex-direction:column;gap:9px}
+.games-drawer-body .game-card{flex:0 0 auto;width:100%;background:#121d2d;border-color:#344967;padding:13px}
+.games-drawer-body .game-card-actions button{min-height:38px;padding:8px 14px}
+.games-drawer-body .game-empty{padding:18px;text-align:center;line-height:1.6}
+.games-scrim{position:fixed;inset:0;z-index:30;background:#02050ac4;opacity:0;pointer-events:none;transition:opacity .25s}
+.games-scrim.open{opacity:1;pointer-events:auto}
 </style>
 </head>
 <body>
@@ -452,7 +476,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     <h2>GROWN-UP <span>SETTINGS</span></h2>
     <button class="mini" id="closeDrawer" type="button" style="width:34px;height:34px;">✕</button>
   </div>
-  <div class="drawer-body"><div class="quick-settings"><button type="button" onclick="switchScreenMode('eyes')">👁 Eyes screen</button><button type="button" onclick="switchScreenMode('game')">🎮 Game viewer</button><button type="button" id="openLibraryBtn">🗂 My games</button></div><p class="settings-hint">These settings are for parents and grown-ups. Children can use the main screen without changing anything.</p><div class="sec">🗂️ MY SAVED GAMES</div><div id="savedGamesList" class="game-shelf" style="margin-bottom:14px"></div>
+  <div class="drawer-body"><div class="quick-settings"><button type="button" onclick="switchScreenMode('eyes')">👁 Eyes screen</button><button type="button" onclick="switchScreenMode('game')">🎮 Game viewer</button><button type="button" id="openLibraryBtn">🗂 My games</button></div><p class="settings-hint">These settings are for parents and grown-ups. Children can use the main screen without changing anything.</p>
     <div class="sec">🖥️ SCREEN DISPLAY MODE SWITCH</div>
 
     <div class="field">
@@ -1711,5 +1735,19 @@ function showToast(msg, type = 'ok') {
   setTimeout(() => { toastEl.className = 'toast'; }, 3200);
 }
 </script>
-<script src="game-library.js"></script></body>
+
+// Saved-games side panel
+(function(){
+  const panel=document.getElementById('gamesDrawer');
+  const shade=document.getElementById('gamesScrim');
+  const open=document.getElementById('openLibraryBtn');
+  const close=document.getElementById('closeGamesDrawer');
+  function show(){panel?.classList.add('open');shade?.classList.add('open');}
+  function hide(){panel?.classList.remove('open');shade?.classList.remove('open');}
+  open?.addEventListener('click',show);
+  close?.addEventListener('click',hide);
+  shade?.addEventListener('click',hide);
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')hide();});
+})();
+\n<script src="game-library.js"></script></body>
 </html>
