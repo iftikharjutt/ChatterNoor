@@ -45,6 +45,36 @@ async function usageFor(id) {
   return result.rows[0] ? Number(result.rows[0].request_count) : 0;
 }
 
+async function refundUsage(id, date) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [date]);
+    await client.query(
+      'UPDATE noor_daily_usage SET request_count=GREATEST(request_count-1,0) WHERE usage_date=$1 AND device_id=$2',
+      [date, id]
+    );
+    await client.query(
+      'DELETE FROM noor_daily_usage WHERE usage_date=$1 AND device_id=$2 AND request_count=0',
+      [date, id]
+    );
+    await client.query(
+      'UPDATE noor_global_usage SET request_count=GREATEST(request_count-1,0) WHERE usage_date=$1',
+      [date]
+    );
+    await client.query(
+      'DELETE FROM noor_global_usage WHERE usage_date=$1 AND request_count=0',
+      [date]
+    );
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 app.get('/health', (_req, res) => res.json({ ok: true, service: 'ChatterNoor AI' }));
 
 app.get('/api/status', async (req, res) => {
@@ -73,9 +103,11 @@ app.post('/api/chat', async (req, res) => {
 
   const client = await pool.connect();
   let reserved = false;
+  let reservationDate = null;
   try {
     await client.query('BEGIN');
     const date = todayUtc();
+    reservationDate = date;
     await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [date]);
     const user = await client.query('SELECT request_count FROM noor_daily_usage WHERE usage_date=$1 AND device_id=$2 FOR UPDATE', [date, id]);
     const global = await client.query('SELECT request_count FROM noor_global_usage WHERE usage_date=$1 FOR UPDATE', [date]);
@@ -107,13 +139,24 @@ app.post('/api/chat', async (req, res) => {
     const payload = await upstream.json().catch(() => ({}));
     if (!upstream.ok) {
       console.error('Gemini upstream error:', upstream.status, payload.error && payload.error.status);
-      return res.status(upstream.status === 429 ? 503 : 502).json({ error: 'Noor AI is busy right now. Please try again shortly.', remaining: Math.max(0, DAILY_USER_LIMIT - userCount - 1) });
+      try { await refundUsage(id, reservationDate); reserved = false; }
+      catch (refundErr) { console.error('usage refund failed:', refundErr.message); }
+      return res.status(upstream.status === 429 ? 503 : 502).json({ error: 'Noor AI is busy right now. Please try again shortly.', remaining: Math.max(0, DAILY_USER_LIMIT - userCount) });
     }
     const reply = payload.candidates && payload.candidates[0] && payload.candidates[0].content && payload.candidates[0].content.parts && payload.candidates[0].content.parts.map(p => p.text || '').join('');
-    if (!reply) return res.status(502).json({ error: 'Noor AI returned an empty reply.' });
+    if (!reply) {
+      try { await refundUsage(id, reservationDate); reserved = false; }
+      catch (refundErr) { console.error('usage refund failed:', refundErr.message); }
+      return res.status(502).json({ error: 'Noor AI returned an empty reply.', remaining: Math.max(0, DAILY_USER_LIMIT - userCount) });
+    }
+    reserved = false;
     res.json({ reply, used: userCount + 1, remaining: Math.max(0, DAILY_USER_LIMIT - userCount - 1) });
   } catch (err) {
     if (!reserved) await client.query('ROLLBACK').catch(() => {});
+    else {
+      try { await refundUsage(id, reservationDate); reserved = false; }
+      catch (refundErr) { console.error('usage refund failed:', refundErr.message); }
+    }
     console.error('chat request failed:', err.message);
     res.status(503).json({ error: 'Noor AI service temporarily unavailable.' });
   } finally {
