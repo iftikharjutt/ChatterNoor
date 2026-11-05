@@ -11,7 +11,7 @@ if [ -f "$DIR/../index.html" ]; then
 fi
 
 ANDROID_SDK="${ANDROID_SDK:-$HOME/android-sdk}"
-ANDROID_JAR="${ANDROID_JAR:-$ANDROID_SDK/platforms/android-34/android.jar}"
+ANDROID_JAR="${ANDROID_JAR:-$ANDROID_SDK/platforms/android-36/android.jar}"
 D8_BIN="${D8_BIN:-$ANDROID_SDK/build-tools/36.0.0/d8}"
 KEYSTORE="${KEYSTORE:-$HOME/.android/debug.keystore}"
 
