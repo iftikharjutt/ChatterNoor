@@ -379,6 +379,25 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   .chat-head b{font-size:10px}
   #msgCount{font-size:8px}
 }
+
+/* Saved game poster carousel inside the eyes display */
+.game-shelf-wrap{display:block;bottom:10px;left:10px;right:10px;padding:8px 10px;background:linear-gradient(180deg,rgba(5,10,18,.72),rgba(5,10,18,.94));border-color:rgba(89,224,255,.28);backdrop-filter:blur(10px);opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .25s,transform .25s}
+.game-shelf-wrap.has-games{opacity:1;transform:none;pointer-events:auto}
+.game-shelf-head{font:600 8px var(--mono);letter-spacing:.16em;color:var(--cyan);margin-bottom:6px}
+.game-shelf{display:flex;gap:9px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:1px 1px 3px}
+.game-shelf::-webkit-scrollbar{display:none}
+.game-shelf .game-card{position:relative;flex:0 0 132px;min-height:82px;scroll-snap-align:start;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;border-radius:11px;padding:9px;background:linear-gradient(145deg,#17334a,#111a31 58%,#261c42);border:1px solid rgba(89,224,255,.36);box-shadow:0 5px 16px rgba(0,0,0,.28);cursor:pointer}
+.game-shelf .game-card:before{content:'🎮';position:absolute;right:7px;top:3px;font-size:25px;opacity:.7;filter:drop-shadow(0 2px 8px rgba(89,224,255,.5))}
+.game-shelf .game-card-title{position:relative;z-index:1;font-size:10px;white-space:normal;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.game-shelf .game-card small,.game-shelf .game-card-actions{display:none}
+.game-shelf .game-card:active{transform:scale(.97)}
+.game-shelf .game-empty{padding:5px 3px;font-size:10px}
+.games-drawer .game-shelf{display:flex;flex-direction:column;overflow:visible}
+.games-drawer .game-card{flex:initial;min-height:0;cursor:default}
+.games-drawer .game-card:before{display:none}
+.games-drawer .game-card small,.games-drawer .game-card-actions{display:block}
+@media(max-width:600px){.game-shelf-wrap{bottom:8px;left:7px;right:7px;padding:7px}.game-shelf .game-card{flex-basis:118px;min-height:72px}}
+
 </style>
 </head>
 <body>
