@@ -1736,20 +1736,16 @@ function showToast(msg, type = 'ok') {
   toastEl.textContent = msg; toastEl.className = `toast show ${type}`;
   setTimeout(() => { toastEl.className = 'toast'; }, 3200);
 }
-</script>
 
-// Saved-games side panel
-(function(){
-  const panel=document.getElementById('gamesDrawer');
-  const shade=document.getElementById('gamesScrim');
-  const open=document.getElementById('openLibraryBtn');
-  const close=document.getElementById('closeGamesDrawer');
-  function show(){panel?.classList.add('open');shade?.classList.add('open');}
-  function hide(){panel?.classList.remove('open');shade?.classList.remove('open');}
-  open?.addEventListener('click',show);
-  close?.addEventListener('click',hide);
-  shade?.addEventListener('click',hide);
-  document.addEventListener('keydown',e=>{if(e.key==='Escape')hide();});
-})();
-\n<script src="game-library.js"></script></body>
+const gamesDrawer = document.getElementById('gamesDrawer');
+const gamesScrim = document.getElementById('gamesScrim');
+document.getElementById('openLibraryBtn')?.addEventListener('click', () => {
+  gamesDrawer?.classList.add('open'); gamesScrim?.classList.add('open');
+});
+function closeGamesPanel(){ gamesDrawer?.classList.remove('open'); gamesScrim?.classList.remove('open'); }
+document.getElementById('closeGamesDrawer')?.addEventListener('click', closeGamesPanel);
+gamesScrim?.addEventListener('click', closeGamesPanel);
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeGamesPanel(); });
+</script>
+<script src="game-library.js"></script></body>
 </html>
