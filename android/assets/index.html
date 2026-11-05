@@ -292,6 +292,35 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .toast.ok{border-color:rgba(87,242,164,.5);color:var(--green)}
 .toast.bad{border-color:rgba(255,93,108,.5);color:var(--red)}
 
+
+/* SAVED GAMES SLIDE LIBRARY */
+.saved-games-panel{position:absolute;z-index:12;inset:58px 14px 46px;padding:14px;border:1px solid rgba(89,224,255,.35);border-radius:18px;
+  background:linear-gradient(145deg,rgba(7,13,21,.97),rgba(9,20,29,.96));backdrop-filter:blur(12px);
+  box-shadow:0 18px 55px rgba(0,0,0,.7),inset 0 0 35px rgba(89,224,255,.06);display:none;flex-direction:column;gap:12px}
+.saved-games-panel.open{display:flex;animation:gamePanelIn .22s ease-out}
+@keyframes gamePanelIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.saved-games-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex:none}
+.saved-games-title{font:700 11px var(--mono);letter-spacing:.2em;color:var(--green)}
+.saved-games-count{font:600 9px var(--mono);color:var(--dim);margin-left:7px}
+.saved-games-actions{display:flex;gap:7px}
+.saved-games-nav,.saved-games-close{width:30px;height:30px;border-radius:9px;border:1px solid var(--line2);background:#101a25;color:var(--cyan);font-size:17px}
+.saved-games-close{color:var(--red)}
+.saved-games-track{display:flex;gap:12px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-behavior:smooth;padding:2px 2px 10px;flex:1;min-height:0;overscroll-behavior-x:contain}
+.saved-games-track::-webkit-scrollbar{height:5px}
+.saved-games-track::-webkit-scrollbar-thumb{background:#294052;border-radius:8px}
+.saved-game-card{position:relative;flex:0 0 min(46%,190px);min-width:138px;display:flex;flex-direction:column;gap:8px;padding:9px;
+  border:1px solid #26394a;border-radius:14px;background:linear-gradient(160deg,#121f2c,#0a1119);scroll-snap-align:start;text-align:left}
+.saved-game-play{display:flex;flex-direction:column;gap:8px;flex:1;border:0;background:none;color:inherit;text-align:left;padding:0;min-width:0}
+.saved-game-cover{height:88px;border-radius:10px;display:grid;place-items:center;overflow:hidden;
+  background:radial-gradient(circle at 50% 35%,rgba(89,224,255,.28),transparent 58%),linear-gradient(135deg,#152b3a,#11131f 65%,#26301f);
+  border:1px solid rgba(89,224,255,.2);font-size:38px;text-shadow:0 0 20px rgba(89,224,255,.5)}
+.saved-game-name{font:700 10px var(--mono);letter-spacing:.07em;color:#e4f4ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.saved-game-date{font:500 8px var(--mono);color:var(--faint)}
+.saved-game-remove{position:absolute;top:14px;right:14px;width:24px;height:24px;border:1px solid rgba(255,93,108,.35);
+  border-radius:8px;background:rgba(5,8,12,.85);color:var(--red);font-size:13px}
+.saved-games-empty{margin:auto;text-align:center;color:var(--dim);font:500 11px/1.7 var(--mono);max-width:250px}
+@media(max-width:600px){.saved-games-panel{inset:52px 8px 38px;padding:10px}.saved-game-card{flex-basis:58%;min-width:132px}.saved-game-cover{height:76px}}
+
 @media(max-width:960px){
   header{padding:10px 14px}
   .tagline,.chip{display:none}
@@ -348,6 +377,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
         <button class="screen-mode-pill" id="screenModeBtn" type="button" title="Toggle between Canvas Eyes and Mini HTML Viewer">
           <span>🎮 GAME VIEWER</span>
         </button>
+        <button class="screen-mode-pill" id="savedGamesBtn" type="button" title="Open saved games">▣ SAVED GAMES</button>
       </div>
 
       <!-- CANVAS EYES SCREEN -->
@@ -357,6 +387,17 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
       <iframe id="gameFrame" class="game-frame" sandbox="allow-scripts allow-modals allow-same-origin"></iframe>
 
       <div class="scan"></div><div class="vig"></div>
+      <div class="saved-games-panel" id="savedGamesPanel" aria-label="Saved games">
+        <div class="saved-games-head">
+          <div><span class="saved-games-title">▣ SAVED GAMES</span><span class="saved-games-count" id="savedGamesCount">0 GAMES</span></div>
+          <div class="saved-games-actions">
+            <button class="saved-games-nav" id="savedGamesPrev" type="button" aria-label="Previous games">‹</button>
+            <button class="saved-games-nav" id="savedGamesNext" type="button" aria-label="Next games">›</button>
+            <button class="saved-games-close" id="savedGamesClose" type="button" aria-label="Close saved games">×</button>
+          </div>
+        </div>
+        <div class="saved-games-track" id="savedGamesTrack"></div>
+      </div>
       <div class="notch"><i></i>NOOR DISPLAY · FULLSCREEN DUAL ENGINE</div>
       <div class="mood-tag" id="moodTag">BOOT</div>
       <div class="wave" id="wave"></div>
@@ -599,6 +640,98 @@ const keyDetectedBadge = document.getElementById('keyDetectedBadge');
 
 let currentScreenMode = 'eyes'; // 'eyes' or 'game'
 let currentHtmlCode = '';
+
+// PERSISTENT SAVED GAMES SLIDER
+const savedGamesBtn = document.getElementById('savedGamesBtn');
+const savedGamesPanel = document.getElementById('savedGamesPanel');
+const savedGamesTrack = document.getElementById('savedGamesTrack');
+const savedGamesCount = document.getElementById('savedGamesCount');
+const savedGamesClose = document.getElementById('savedGamesClose');
+const savedGamesPrev = document.getElementById('savedGamesPrev');
+const savedGamesNext = document.getElementById('savedGamesNext');
+let savedGames = [];
+try { savedGames = JSON.parse(localStorage.getItem('NOOR_SAVED_GAMES_V1') || '[]'); if (!Array.isArray(savedGames)) savedGames = []; } catch(e) { savedGames = []; }
+
+function getGameTitle(html) {
+  const title = (html.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i) || [,'My Game'])[1];
+  const clean = title.replace(/<[^>]*>/g,' ').replace(/&amp;/g,'&').replace(/\s+/g,' ').trim();
+  return (clean || 'My Game').slice(0,42);
+}
+function getGameIcon(name) {
+  const n = name.toLowerCase();
+  if (/snake|worm/.test(n)) return '🐍';
+  if (/chess|checkers/.test(n)) return '♟️';
+  if (/car|race|racing/.test(n)) return '🏎️';
+  if (/space|galaxy|shoot|alien/.test(n)) return '🚀';
+  if (/puzzle|memory|match/.test(n)) return '🧩';
+  if (/tic|toe|xo/.test(n)) return '⭕';
+  if (/maze|labyrinth/.test(n)) return '🌀';
+  if (/football|soccer/.test(n)) return '⚽';
+  if (/basket|hoop/.test(n)) return '🏀';
+  return '🎮';
+}
+function persistSavedGames() {
+  try { localStorage.setItem('NOOR_SAVED_GAMES_V1', JSON.stringify(savedGames)); }
+  catch(e) { showToast('Storage full: remove an old saved game first.', 'bad'); }
+}
+function renderSavedGames() {
+  if (!savedGamesTrack) return;
+  savedGamesTrack.replaceChildren();
+  savedGamesCount.textContent = savedGames.length + (savedGames.length === 1 ? ' GAME' : ' GAMES');
+  if (!savedGames.length) {
+    const empty = document.createElement('div');
+    empty.className = 'saved-games-empty';
+    empty.textContent = 'No saved games yet. Ask Noor to create a game and it will appear here.';
+    savedGamesTrack.appendChild(empty);
+    return;
+  }
+  savedGames.forEach((game, index) => {
+    const card = document.createElement('article');
+    card.className = 'saved-game-card';
+    const play = document.createElement('button');
+    play.type = 'button'; play.className = 'saved-game-play';
+    const cover = document.createElement('div');
+    cover.className = 'saved-game-cover'; cover.textContent = game.icon || getGameIcon(game.name);
+    const name = document.createElement('div'); name.className = 'saved-game-name'; name.textContent = game.name || 'My Game';
+    const date = document.createElement('div'); date.className = 'saved-game-date';
+    date.textContent = game.savedAt ? new Date(game.savedAt).toLocaleDateString() : 'SAVED GAME';
+    play.append(cover,name,date);
+    play.addEventListener('click', () => {
+      currentHtmlCode = game.html;
+      gameFrame.srcdoc = currentHtmlCode;
+      switchScreenMode('game');
+      savedGamesPanel.classList.remove('open');
+      openFullscreenGame(currentHtmlCode);
+    });
+    const remove = document.createElement('button');
+    remove.type = 'button'; remove.className = 'saved-game-remove'; remove.textContent = '×';
+    remove.title = 'Remove saved game';
+    remove.addEventListener('click', () => {
+      savedGames.splice(index,1); persistSavedGames(); renderSavedGames();
+      showToast('Saved game removed.', 'ok');
+    });
+    card.append(play,remove); savedGamesTrack.appendChild(card);
+  });
+}
+function saveGameToLibrary(html) {
+  if (!html || !html.trim()) return;
+  const name = getGameTitle(html);
+  const existing = savedGames.findIndex(g => g.html === html);
+  const entry = { id: Date.now(), name, icon: getGameIcon(name), html, savedAt: new Date().toISOString() };
+  if (existing >= 0) savedGames.splice(existing,1);
+  savedGames.unshift(entry);
+  savedGames = savedGames.slice(0,20);
+  persistSavedGames(); renderSavedGames();
+}
+savedGamesBtn.addEventListener('click', () => {
+  renderSavedGames();
+  savedGamesPanel.classList.toggle('open');
+});
+savedGamesClose.addEventListener('click', () => savedGamesPanel.classList.remove('open'));
+savedGamesPrev.addEventListener('click', () => savedGamesTrack.scrollBy({left:-savedGamesTrack.clientWidth * .8,behavior:'smooth'}));
+savedGamesNext.addEventListener('click', () => savedGamesTrack.scrollBy({left:savedGamesTrack.clientWidth * .8,behavior:'smooth'}));
+renderSavedGames();
+
 
 // DUAL & FULLSCREEN GAME CONTROL LOGIC
 function switchScreenMode(targetMode) {
@@ -1378,6 +1511,7 @@ async function sendMessage() {
     const htmlCode = extractHtmlCode(rawReply);
     if (htmlCode) {
       currentHtmlCode = htmlCode;
+      saveGameToLibrary(htmlCode);
       gameFrame.srcdoc = htmlCode;
       switchScreenMode('game');
 
@@ -1525,6 +1659,21 @@ function showToast(msg, type = 'ok') {
   toastEl.textContent = msg; toastEl.className = `toast show ${type}`;
   setTimeout(() => { toastEl.className = 'toast'; }, 3200);
 }
+
+// SETTINGS CLICK RECOVERY: capture taps even if another UI layer interferes.
+document.addEventListener('click', function(event) {
+  const target = event.target && event.target.closest ? event.target.closest('#setBtn') : null;
+  if (!target) return;
+  event.preventDefault();
+  event.stopPropagation();
+  try {
+    if (typeof openDrawer === 'function') openDrawer();
+    else document.body.classList.add('open');
+  } catch (error) {
+    document.body.classList.add('open');
+    console.error('Settings drawer recovery:', error);
+  }
+}, true);
 </script>
 </body>
 </html>
