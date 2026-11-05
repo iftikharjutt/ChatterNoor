@@ -1230,17 +1230,41 @@ function extractHtmlCode(text) {
   return null;
 }
 
-// GOOGLE GEMINI NATIVE REST CALLER
+// GOOGLE GEMINI NATIVE REST CALLER WITH REQUEST-SIZE PROTECTION
 async function callGeminiNativeAPI(apiKey, model, systemPrompt, userText) {
   const modelName = model || 'gemini-2.5-flash';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
-  let historyContext = "";
-  messageHistory.slice(-6).forEach(m => {
-    historyContext += `${m.role === 'user' ? 'User' : 'NOOR'}: ${m.content}\n`;
+  // Keep the serialized prompt predictable. Large generated games and pasted code
+  // must never be replayed as chat history on the next request.
+  const MAX_SYSTEM_CHARS = 12000;
+  const MAX_USER_CHARS = 8000;
+  const MAX_HISTORY_TOTAL_CHARS = 6000;
+  const MAX_HISTORY_ITEM_CHARS = 1200;
+  const safeSystemPrompt = String(systemPrompt || '').slice(0, MAX_SYSTEM_CHARS);
+  const safeUserText = String(userText || '').slice(-MAX_USER_CHARS);
+  const recentMessages = messageHistory.slice(-7).filter((m, index, list) => {
+    // sendMessage() already adds the current user turn before calling this function.
+    if (index === list.length - 1 && m.role === 'user' && m.content === userText) return false;
+    const content = String(m.content || '');
+    if (content.length > MAX_HISTORY_ITEM_CHARS * 3) return false;
+    if (/<(?:!doctype\s+html|html|script|style|canvas|svg)\b/i.test(content)) return false;
+    if (/\`\`\`[\s\S]{1200,}\`\`\`/.test(content)) return false;
+    return true;
   });
 
-  const promptPayload = `System Instructions:\n${systemPrompt}\n\nChat History:\n${historyContext}\nUser Question:\n${userText}`;
+  const boundedHistory = [];
+  let historyChars = 0;
+  for (let i = recentMessages.length - 1; i >= 0; i--) {
+    const m = recentMessages[i];
+    const content = String(m.content || '').slice(-MAX_HISTORY_ITEM_CHARS);
+    const line = `${m.role === 'user' ? 'User' : 'NOOR'}: ${content}`;
+    if (historyChars + line.length > MAX_HISTORY_TOTAL_CHARS) continue;
+    boundedHistory.unshift(line);
+    historyChars += line.length;
+  }
+  const historyContext = boundedHistory.join('\n');
+  const promptPayload = `System Instructions:\n${safeSystemPrompt}\n\nChat History:\n${historyContext}\nUser Question:\n${safeUserText}`;
 
   const response = await fetch(url, {
     method: 'POST',
@@ -1257,6 +1281,9 @@ async function callGeminiNativeAPI(apiKey, model, systemPrompt, userText) {
       const parsed = JSON.parse(errText);
       if (parsed.error && parsed.error.message) msg = parsed.error.message;
     } catch(e) {}
+    if (response.status === 413) {
+      throw new Error('Request too large (HTTP 413). Noor has shortened the chat context, but this request still exceeds the server limit. Please send a shorter message or start a new chat.');
+    }
     throw new Error(`Google Gemini Error (${response.status}): ${msg}`);
   }
 
