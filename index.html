@@ -356,7 +356,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .games-drawer-body .game-empty{padding:18px;text-align:center;line-height:1.6}
 .games-scrim{position:fixed;inset:0;z-index:30;background:#02050ac4;opacity:0;pointer-events:none;transition:opacity .25s}
 .games-scrim.open{opacity:1;pointer-events:auto}
-</style>
+.watch-ad-btn{border:1px solid #e9b65e;background:#3b2c16;color:#ffd58a;border-radius:99px;padding:7px 10px;font:700 9px var(--mono);white-space:nowrap}.watch-ad-btn[hidden]{display:none}</style>
 </head>
 <body>
 <div class="ambient"></div>
@@ -426,7 +426,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     <div class="chat-head">
       <b>CHAT & CREATE WITH NOOR</b>
       <div class="tools">
-        <span class="energy-pill" id="energyPill">⚡ 5 / 5 TODAY</span><span id="msgCount">0 MSGS</span>
+        <span class="energy-pill" id="energyPill">⚡ 5 / 5 TODAY</span><button id="watchAdBtn" class="watch-ad-btn" type="button" hidden>▶ WATCH AD +1</button><span id="msgCount">0 MSGS</span>
         <button class="mini" id="clearBtn" type="button" title="Clear chat">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
@@ -663,6 +663,7 @@ function getDeviceId() {
   return id;
 }
 
+function updateRewardOffer(remaining) { const btn=document.getElementById('watchAdBtn'); if(btn) btn.hidden=!(Number(remaining)<=0); }
 async function refreshEnergy() {
   if (settings.aiMode === 'byok') { energyPill.textContent = '🔑 YOUR API'; return; }
   const base = (settings.backendUrl || '').trim().replace(/\/$/, '');
@@ -671,7 +672,7 @@ async function refreshEnergy() {
     const r = await fetch(base + '/api/status', { headers: { 'X-Device-Id': getDeviceId() } });
     if (!r.ok) throw new Error('status unavailable');
     const d = await r.json();
-    energyPill.textContent = '⚡ ' + d.remaining + ' / 5 TODAY';
+    energyPill.textContent = '⚡ ' + d.remaining + ' / 5 TODAY'; updateRewardOffer(d.remaining);
   } catch (e) { energyPill.textContent = '⚡ OFFLINE'; }
 }
 
@@ -690,7 +691,7 @@ async function callNoorAI(userText, model, systemPrompt) {
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || 'Noor AI server error (' + response.status + ')');
-  energyPill.textContent = '⚡ ' + data.remaining + ' / 5 TODAY';
+  energyPill.textContent = '⚡ ' + data.remaining + ' / 5 TODAY'; updateRewardOffer(data.remaining);
   return data.reply;
 }
 
@@ -1618,6 +1619,7 @@ async function sendMessage() {
   }
 }
 sendBtn.addEventListener('click', sendMessage);
+document.getElementById('watchAdBtn')?.addEventListener('click',()=>showToast('Rewarded ads need AdMob setup before credits can be awarded.','bad'));
 
 // SETTINGS DRAWER MANAGERS
 function openDrawer() {
