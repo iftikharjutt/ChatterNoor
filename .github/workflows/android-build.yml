@@ -2,7 +2,7 @@ name: Android APK build
 
 on:
   push:
-    branches: [main, "hardening/**", "feature/**"]
+    branches: [main, "hardening/**", "feature/**", "release/**"]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -30,6 +30,11 @@ jobs:
 
       - name: Install Android build tools
         run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Verify synchronized app assets
+        run: |
+          cmp -s index.html android/assets/index.html
+          cmp -s game-library.js android/assets/game-library.js
 
       - name: Validate app JavaScript
         run: |
