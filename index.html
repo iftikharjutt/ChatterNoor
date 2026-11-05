@@ -664,7 +664,7 @@ function getDeviceId() {
   return id;
 }
 
-function updateRewardOffer(remaining) { const btn=document.getElementById('watchAdBtn'); if(btn) btn.hidden=!(Number(remaining)<=0); }
+function updateRewardOffer(remaining) { const btn=document.getElementById('watchAdBtn'); if(btn) { btn.hidden=Number(remaining)>0; btn.disabled=true; btn.textContent='↻ RESET TOMORROW'; btn.title='Daily free messages refresh at midnight UTC.'; } }
 async function refreshEnergy() {
   if (settings.aiMode === 'byok') { energyPill.textContent = '🔑 YOUR API'; return; }
   const base = (settings.backendUrl || '').trim().replace(/\/$/, '');
@@ -673,7 +673,7 @@ async function refreshEnergy() {
     const r = await fetch(base + '/api/status', { headers: { 'X-Device-Id': getDeviceId() } });
     if (!r.ok) throw new Error('status unavailable');
     const d = await r.json();
-    energyPill.textContent = '⚡ ' + d.remaining + ' / 5 TODAY'; updateRewardOffer(d.remaining);
+    energyPill.textContent = '⚡ ' + d.remaining + ' / ' + (d.dailyLimit || 5) + ' TODAY'; updateRewardOffer(d.remaining);
   } catch (e) { energyPill.textContent = '⚡ OFFLINE'; }
 }
 
@@ -692,7 +692,7 @@ async function callNoorAI(userText, model, systemPrompt) {
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || 'Noor AI server error (' + response.status + ')');
-  energyPill.textContent = '⚡ ' + data.remaining + ' / 5 TODAY'; updateRewardOffer(data.remaining);
+  energyPill.textContent = '⚡ ' + data.remaining + ' / ' + (data.dailyLimit || 5) + ' TODAY'; updateRewardOffer(data.remaining);
   return data.reply;
 }
 
@@ -1610,17 +1610,17 @@ async function sendMessage() {
     speakText(parsed.cleanText);
 
   } catch(err) {
-    console.error('Gemini Execution Error:', err);
+    console.error('Noor AI Execution Error:', err);
     removeTypingDots(); playChime('error'); setMood('error');
-    addMessage('ai', `⚠️ Gemini API Error:\n${err.message}`, true);
-    showToast(`Gemini Error! Check Key in Settings.`, 'bad');
-    speakText("Gemini API error. Settings mein key check karein.");
+    addMessage('ai', `⚠️ Noor AI Error:\n${err.message}`, true);
+    showToast('Noor AI connection issue. Please try again.', 'bad');
+    refreshEnergy();
+    speakText("Noor AI connection error. Please try again.");
   } finally {
     isThinking = false; sendBtn.disabled = false;
   }
 }
 sendBtn.addEventListener('click', sendMessage);
-document.getElementById('watchAdBtn')?.addEventListener('click',()=>showToast('Rewarded ads need AdMob setup before credits can be awarded.','bad'));
 
 // SETTINGS DRAWER MANAGERS
 function openDrawer() {
